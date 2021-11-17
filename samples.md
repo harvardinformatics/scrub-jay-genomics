@@ -2,8 +2,8 @@
 
 | MCZ id | status |
 |---|---|
-|MCZ_Cryo_8788|hifiasm running|
-|MCZ_Orn_365327|hifiasm running|
+|MCZ_Cryo_8788|finished|
+|MCZ_Orn_365327|finished|
 |MCZ_Orn_365337|finished|
 |MCZ_Orn_366487|hifiasm running|
 |MCZ_Orn_366490|finished|
@@ -14,4 +14,6 @@
 |MCZ_Orn_366488|finished|
 |MCZ_orn_366493|finished|
 
-MCZ_Orn_365335, MCZ_Orn_366488, MCZ_Orn_365337 still need to be [converted to fasta](https://hifiasm.readthedocs.io/en/latest/faq.html#how-do-i-get-contigs-in-fasta)
+MCZ_Orn_365335, MCZ_Orn_366488, MCZ_Orn_365337, MCZ_Cryo_8788, MCZ_Orn_365327 still need to be [converted to fasta](https://hifiasm.readthedocs.io/en/latest/faq.html#how-do-i-get-contigs-in-fasta)
+
+MCZ_Orn_366487 failed with 100G RAM, restarted with 400G.
