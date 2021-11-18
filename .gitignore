@@ -1,3 +1,6 @@
+#Don't track results files, which are big
+results/
+
 # History files
 .Rhistory
 .Rapp.history
