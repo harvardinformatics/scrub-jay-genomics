@@ -13,4 +13,6 @@
 |MCZ_orn_365338|finished|[logfile](https://github.com/harvardinformatics/scrub-jay-genomics/blob/main/00_assembly/logs/MCZ_orn_365338.log)|
 |MCZ_Orn_366488|finished|[logfile](https://github.com/harvardinformatics/scrub-jay-genomics/blob/main/00_assembly/logs/MCZ_Orn_366488.log)|
 |MCZ_orn_366493|finished|[logfile](https://github.com/harvardinformatics/scrub-jay-genomics/blob/main/00_assembly/logs/MCZ_orn_366493.log)|
-
+|MCZ_Orn_366499|running||
+|MCZ_Orn_366498|running||
+|Colorado_1603_79232|running||
