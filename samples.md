@@ -14,4 +14,3 @@
 |MCZ_Orn_366488|finished|[logfile](https://github.com/harvardinformatics/scrub-jay-genomics/blob/main/00_assembly/logs/MCZ_Orn_366488.log)|
 |MCZ_orn_366493|finished|[logfile](https://github.com/harvardinformatics/scrub-jay-genomics/blob/main/00_assembly/logs/MCZ_orn_366493.log)|
 
-MCZ_Orn_365335, MCZ_Orn_366488, MCZ_Orn_365337, MCZ_Cryo_8788, MCZ_Orn_365327, MCZ_Orn_366487 still need to be [converted to fasta](https://hifiasm.readthedocs.io/en/latest/faq.html#how-do-i-get-contigs-in-fasta)
