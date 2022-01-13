@@ -1,0 +1,40 @@
+import yaml
+
+configfile: "config/config.yaml"
+
+rule all:
+    input:
+        ""
+        sample = config["sample"] #can i put this up hear to scope it for all rules??
+
+rule hifi:
+    input:
+        reads = config["reads"]
+        #sample = config["sample"]
+    output:
+        "results/hifiasm_output_RAW/{sample}.ctg.gfa"
+    threads: 16
+    shell:
+        "../../hifiasm/hifiasm -t {threads} -o {output} {input}" #could prolly specify threads in resources file...
+        #need to update this path as well
+
+rule gfa_to_fasta:
+    input:
+        "results/hifiasm_output_RAW/{sample}.ctg.gfa"
+    output:
+        "results/assemblies/{sample}.fa.gz"
+    shell:
+        "awk '/^S/{print \">\"$2;print $3}' {input} | gzip > {output}"
+
+rule quast:
+    input:
+        "results/assemblies/{sample}.fa.gz"
+    output:
+        quast_dir = directory("results/assembly_qc/{sample}_quast") #can you have a directory as the output like this??
+    conda:
+        "envs/quast.yaml"
+    threads: 4
+    log:
+        "logs/" + config["sample"] + "quast_log/"
+    shell:
+        "quast.py -t {threads} --eukaryote -o {output.quast_dir} {input} &> {log}"
