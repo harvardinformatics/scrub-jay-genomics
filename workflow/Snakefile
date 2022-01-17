@@ -1,40 +1,48 @@
 import yaml
 
-configfile: "config/config.yaml"
+#configfile: "../config/config.yaml"
+#Change these variables:
+input_dir = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/RAW_DATA/"
+sample = "MCZ_Orn_17743"
+Infile = glob.glob(f"{input_dir}/{sample}/*/*.fastq.gz")
+hifiasm_exe = "/path/to/hifasm"
+hifi_outdir = "results/hifiasm_output_RAW/"
+assem_outdir = "results/assemblies"
+
+#SAMPLES = [“sample1”, “sample2’]
+#expand({sample}_quast.done, sample=SAMPLES)
 
 rule all:
     input:
-        ""
-        sample = config["sample"] #can i put this up hear to scope it for all rules??
+        "results/assembly_qc/{sample}_quast/{sample}_quast.DONE"
 
 rule hifi:
     input:
-        reads = config["reads"]
-        #sample = config["sample"]
+        "{reads}" #need read files
     output:
-        "results/hifiasm_output_RAW/{sample}.ctg.gfa"
+        "{hifi_outdir}/{sample}.ctg.gfa"
     threads: 16
     shell:
-        "../../hifiasm/hifiasm -t {threads} -o {output} {input}" #could prolly specify threads in resources file...
-        #need to update this path as well
+        "{hifiasm_exe}/hifiasm -t {threads} -o {hifi_outdir}/{sample} {input}"
 
 rule gfa_to_fasta:
     input:
-        "results/hifiasm_output_RAW/{sample}.ctg.gfa"
+        "{hifi_outdir}/{sample}.ctg.gfa"
     output:
-        "results/assemblies/{sample}.fa.gz"
+        "{assem_outdir}/{sample}.fa.gz"
     shell:
         "awk '/^S/{print \">\"$2;print $3}' {input} | gzip > {output}"
 
 rule quast:
     input:
-        "results/assemblies/{sample}.fa.gz"
+        "{assem_outdir}/{sample}.fa.gz"
     output:
-        quast_dir = directory("results/assembly_qc/{sample}_quast") #can you have a directory as the output like this??
+        quast_dir = directory("results/assembly_qc/{sample}_quast")
+        quast_done = touch("results/assembly_qc/{sample}_quast/{sample}_QUAST.done")
     conda:
         "envs/quast.yaml"
     threads: 4
     log:
-        "logs/" + config["sample"] + "quast_log/"
+        "logs/{sample}/quast_log/"
     shell:
         "quast.py -t {threads} --eukaryote -o {output.quast_dir} {input} &> {log}"
