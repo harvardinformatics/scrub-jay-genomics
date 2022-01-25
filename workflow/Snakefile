@@ -8,6 +8,7 @@ Infile = glob.glob(f"{input_dir}/{sample}/*/*.fastq.gz")
 hifiasm_exe = "/path/to/hifasm"
 hifi_outdir = "results/hifiasm_output_RAW/"
 assem_outdir = "results/assemblies"
+haplo = "pri"
 
 #SAMPLES = [“sample1”, “sample2’]
 #expand({sample}_quast.done, sample=SAMPLES)
@@ -31,18 +32,39 @@ rule gfa_to_fasta:
     output:
         "{assem_outdir}/{sample}.fa.gz"
     shell:
-        "awk '/^S/{print \">\"$2;print $3}' {input} | gzip > {output}"
+        "awk '/^S/{print \">\"$2;print $3}' {input} > {output}"
+
+rule rename_contig:
+    input:
+        "{assem_outdir}/{sample}.fa"
+    output:
+        "{assem_outdir}/{sample}.rename.fa"
+    run:
+        fasta=open(input)
+        newfasta=open(output,'w')
+        for line in fasta:
+            if line.startswith('>'):
+                ID=line.replace(">", "")
+                newID= '>' + sample + '#' + haplo + '#' + ID + '\n'
+                newfasta.write(newID)
+            else:
+                newfasta.write(line)
+        fasta.close()
+        newfasta.close()
 
 rule quast:
     input:
-        "{assem_outdir}/{sample}.fa.gz"
+        "{assem_outdir}/{sample}.rename.fa"
+    params: #trying alternative way that's less hack-y
+        prefix="results/assembly_qc/{sample}_quast"
     output:
-        quast_dir = directory("results/assembly_qc/{sample}_quast")
-        quast_done = touch("results/assembly_qc/{sample}_quast/{sample}_QUAST.done")
+        #quast_dir = directory("results/assembly_qc/{sample}_quast")
+        #quast_done = touch("results/assembly_qc/{sample}_quast/{sample}_QUAST.done")
+        "results/assembly_qc/{sample}_quast/report.txt"
     conda:
         "envs/quast.yaml"
     threads: 4
     log:
         "logs/{sample}/quast_log/"
     shell:
-        "quast.py -t {threads} --eukaryote -o {output.quast_dir} {input} &> {log}"
+        "quast.py -t {threads} --eukaryote -o {params.prefix} {input} &> {log}"
