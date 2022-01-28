@@ -15,11 +15,23 @@ haplo = "pri"
 
 rule all:
     input:
-        "results/assembly_qc/{sample}_quast/{sample}_quast.DONE"
+        "results/assembly_qc/{sample}_quast/report.txt"
+
+rule adapterfilt:
+    input:
+        "{reads}"
+    output:
+        "{hifi_outdir}/{sample}.filt.fastq.gz"
+    conda:
+        "envs/adapter.yaml"
+    params:
+        outprefix="{hifi_outdir}"
+    shell:
+        "bash scripts/hifiadapterfilt.sh -p {sample} -o {params.outprefix}"
 
 rule hifi:
     input:
-        "{reads}" #need read files
+        "{hifi_outdir}/{sample}.filt.fastq.gz" 
     output:
         "{hifi_outdir}/{sample}.ctg.gfa"
     threads: 16
