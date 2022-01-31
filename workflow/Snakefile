@@ -5,7 +5,7 @@ import yaml
 input_dir = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/RAW_DATA/"
 sample = "MCZ_Orn_17743"
 Infile = glob.glob(f"{input_dir}/{sample}/*/*.fastq.gz")
-hifiasm_exe = "/path/to/hifasm"
+hifiasm_exe = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/hifiasm"
 hifi_outdir = "results/hifiasm_output_RAW/"
 assem_outdir = "results/assemblies"
 haplo = "pri"
@@ -31,7 +31,7 @@ rule adapterfilt:
 
 rule hifi:
     input:
-        "{hifi_outdir}/{sample}.filt.fastq.gz" 
+        "{hifi_outdir}/{sample}.filt.fastq.gz"
     output:
         "{hifi_outdir}/{sample}.ctg.gfa"
     threads: 16
