@@ -33,31 +33,31 @@ shift $((OPTIND - 1))
 
 ## Set variables based on options
 
-if [ -f temp_file_list ]
+if [ -f ${prefix}.temp_file_list ]
 then
-	rm temp_file_list
+	rm ${prefix}.temp_file_list
 fi
 
 if [ ${prefix} = "all" ]
 then
-        ls | grep "bam\|fq\|fastq" >temp_file_list
+        ls | grep "bam\|fq\|fastq" >${prefix}.temp_file_list
 
 else
 	if ls ${prefix}*.f*q* >/dev/null 2>&1
 	then
-		for x in `ls ${prefix}*.f*q*`; do echo $x >>temp_file_list; done
+		for x in `ls ${prefix}*.f*q*`; do echo $x >>${prefix}.temp_file_list; done
 	fi
 
 	if ls ${prefix}*.bam >/dev/null 2>&1
 	then
-		for x in `ls ${prefix}*.bam`; do echo $x >>temp_file_list; done
+		for x in `ls ${prefix}*.bam`; do echo $x >>${prefix}.temp_file_list; done
 	fi
 fi
 
 
 ##
 
-reads_pref=$(for x in `cat temp_file_list`; do ls $x | sed 's/\.fastq.gz//' | sed 's/\.fq.gz//' | sed 's/\.bam//' | sed 's/\.fastq//' | sed 's/\.fq//'; done)
+reads_pref=$(for x in `cat ${prefix}.temp_file_list`; do ls $x | sed 's/\.fastq.gz//' | sed 's/\.fq.gz//' | sed 's/\.bam//' | sed 's/\.fastq//' | sed 's/\.fq//'; done)
 read_path=$(dirname ${prefix}*)
 read_path_str=$(echo ${read_path} | cut -d" " -f 1)
 
@@ -68,7 +68,7 @@ then
 	mkdir ${outdir}
 fi
 
-for x in `cat temp_file_list`; do echo $x; done
+for x in `cat ${prefix}.temp_file_list`; do echo $x; done
 
 if [ -z ${reads_pref} ]
 then
@@ -285,7 +285,7 @@ do
 	fi
 done
 
-if [ -f temp_file_list ]
+if [ -f ${prefix}.temp_file_list ]
 then
-	rm temp_file_list
+	rm ${prefix}.temp_file_list
 fi
