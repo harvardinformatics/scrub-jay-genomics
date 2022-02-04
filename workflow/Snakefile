@@ -25,10 +25,8 @@ rule adapterfilt:
         temp("{hifi_outdir}/{sample}.filt.fastq.gz")
     conda:
         "envs/adapter.yaml"
-    params:
-        outprefix="{hifi_outdir}"
     shell:
-        "bash scripts/hifiadapterfilt.sh -p {sample} -o {params.outprefix}" #need change sample
+        "cutadapt --discard-trimmed --rev-comp --overlap=35 -b ATCTCTCTCAACAACAACAACGGAGGAGGAGGAAAAGAGAGAGAT -b ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT -o {output} -i {input}" #need change sample
 
 rule hifi:
     input:

@@ -3,5 +3,4 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - bamtools
-  - blast
+  - cutadapt
