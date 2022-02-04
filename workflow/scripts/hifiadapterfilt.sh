@@ -45,18 +45,20 @@ then
 else
 	if ls ${prefix}*.f*q* >/dev/null 2>&1
 	then
+    #Modify this to change list path -DEK
 		for x in `ls ${prefix}*.f*q*`; do echo $x >>${prefix}.temp_file_list; done
 	fi
 
 	if ls ${prefix}*.bam >/dev/null 2>&1
 	then
+    #Modify this to change list path -DEK
 		for x in `ls ${prefix}*.bam`; do echo $x >>${prefix}.temp_file_list; done
 	fi
 fi
 
 
 ##
-
+#Change reads_pref so doesn't use whole prefix, just use basename -DEK
 reads_pref=$(for x in `cat ${prefix}.temp_file_list`; do ls $x | sed 's/\.fastq.gz//' | sed 's/\.fq.gz//' | sed 's/\.bam//' | sed 's/\.fastq//' | sed 's/\.fq//'; done)
 read_path=$(dirname ${prefix}*)
 read_path_str=$(echo ${read_path} | cut -d" " -f 1)

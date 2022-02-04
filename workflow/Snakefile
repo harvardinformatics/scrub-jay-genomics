@@ -28,7 +28,7 @@ rule adapterfilt:
     params:
         outprefix="{hifi_outdir}"
     shell:
-        "bash scripts/hifiadapterfilt.sh -p {sample} -o {params.outprefix}"
+        "bash scripts/hifiadapterfilt.sh -p {sample} -o {params.outprefix}" #need change sample
 
 rule hifi:
     input:
