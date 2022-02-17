@@ -33,7 +33,7 @@ rule adapterfilt:
 
 rule hifi:
     input:
-        expand("{hifi_outdir}/{sample}.filt.fastq.gz", sample=samples)
+        expand("{base}/{sample}.filt.fastq.gz", base=hifiasm_path, sample=samples)
     output:
         "{hifi_outdir}/{sample}.{haplo}.gfa"
     params:
@@ -44,7 +44,7 @@ rule hifi:
 
 rule gfa_to_fasta:
     input:
-        expand("{hifi_outdir}/{sample}.{haplo}.gfa", sample=samples, haplo=haplotypes)
+        expand("{base}/{sample}.{haplo}.gfa", base=hifi_outdir, sample=samples, haplo=haplotypes)
     output:
         temp("{assem_outdir}/{sample}.{haplo}.fa")
     shell:
@@ -52,7 +52,7 @@ rule gfa_to_fasta:
 
 rule rename_contig:
     input:
-        expand("{assem_outdir}/{sample}.{haplo}.fa", sample=samples, haplo=haplotypes)
+        expand("{base}/{sample}.{haplo}.fa", base=assem_outdir, sample=samples, haplo=haplotypes)
     output:
         "{assem_outdir}/{sample}.{haplo}.rename.fa"
     run:
@@ -70,7 +70,7 @@ rule rename_contig:
 
 rule quast:
     input:
-        expand("{assem_outdir}/{sample}.{haplo}.rename.fa", sample=samples, haplo=haplotypes)
+        expand("{base}/{sample}.{haplo}.rename.fa", base=assem_outdir, sample=samples, haplo=haplotypes)
     params: #trying alternative way that's less hack-y
         prefix="results/assembly_qc/{sample}.{haplo}_quast"
     output:
