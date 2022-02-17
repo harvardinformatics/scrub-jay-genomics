@@ -1,26 +1,29 @@
 import yaml
+import glob
 
 #configfile: "../config/config.yaml"
 #Change these variables:
 input_dir = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/RAW_DATA/"
 samples = ["sample1", "sample2"]
-haplotypes=["hap1.p_ctg", "hap2.p_ctg", "p_ctg']
+haplotypes=["hap1.p_ctg", "hap2.p_ctg", "p_ctg"]
 
 #SAMPLES = [“sample1”, “sample2’]
 #expand({sample}_quast.done, sample=SAMPLES)
+
+hifiasm_path = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/hifiasm"
+hifi_outdir = "results/hifiasm_output_RAW/"
+assem_outdir = "results/assemblies"
 
 rule all:
     input:
         expand("results/assembly_qc/{sample}_{haplo}_quast/report.txt", haplo=haplotypes, sample=samples)
 
-reads = glob.glob(f"{input_dir}/{sample}/*/*.fastq.gz")
-hifiasm_path = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/hifiasm"
-hifi_outdir = "results/hifiasm_output_RAW/"
-assem_outdir = "results/assemblies"
+#reads = glob.glob(f"{input_dir}/{sample}/*/*.fastq.gz")
 
 rule adapterfilt:
     input:
-        "{reads}"
+        #"{reads}"
+        lambda wildcards: glob('{input_dir}/{sample}/*.fastq.gz'.format(sample=wildcards.sample))
     output:
         temp("{hifi_outdir}/{sample}.filt.fastq.gz")
     conda:
@@ -30,16 +33,18 @@ rule adapterfilt:
 
 rule hifi:
     input:
-        "{hifi_outdir}/{sample}.filt.fastq.gz"
+        expand("{hifi_outdir}/{sample}.filt.fastq.gz", sample=samples)
     output:
         "{hifi_outdir}/{sample}.{haplo}.gfa"
+    params:
+        prefix="{hifi_outdir}/{sample}"
     threads: 16
     shell:
-        "{hifiasm_path}/hifiasm -t {threads} -o {hifi_outdir}/{sample} {input}"
+        "{hifiasm_path}/hifiasm -t {threads} -o {params.prefix} {input}"
 
 rule gfa_to_fasta:
     input:
-        "{hifi_outdir}/{sample}.{haplo}.gfa"
+        expand("{hifi_outdir}/{sample}.{haplo}.gfa", sample=samples, haplo=haplotypes)
     output:
         temp("{assem_outdir}/{sample}.{haplo}.fa")
     shell:
@@ -47,7 +52,7 @@ rule gfa_to_fasta:
 
 rule rename_contig:
     input:
-        "{assem_outdir}/{sample}.{haplo}.fa"
+        expand("{assem_outdir}/{sample}.{haplo}.fa", sample=samples, haplo=haplotypes)
     output:
         "{assem_outdir}/{sample}.{haplo}.rename.fa"
     run:
@@ -65,7 +70,7 @@ rule rename_contig:
 
 rule quast:
     input:
-        "{assem_outdir}/{sample}.{haplo}.rename.fa"
+        expand("{assem_outdir}/{sample}.{haplo}.rename.fa", sample=samples, haplo=haplotypes)
     params: #trying alternative way that's less hack-y
         prefix="results/assembly_qc/{sample}.{haplo}_quast"
     output:
