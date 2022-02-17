@@ -4,14 +4,14 @@ import glob
 #configfile: "../config/config.yaml"
 #Change these variables:
 input_dir = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/RAW_DATA/"
-samples = ["sample1", "sample2"]
+samples = ["MCZ_Orn_366497"]
 haplotypes=["hap1.p_ctg", "hap2.p_ctg", "p_ctg"]
 
 #SAMPLES = [“sample1”, “sample2’]
 #expand({sample}_quast.done, sample=SAMPLES)
 
 hifiasm_path = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/hifiasm"
-hifi_outdir = "results/hifiasm_output_RAW/"
+hifi_outdir = "results/hifiasm_output_RAW"
 assem_outdir = "results/assemblies"
 
 rule all:
@@ -23,7 +23,7 @@ rule all:
 rule adapterfilt:
     input:
         #"{reads}"
-        lambda wildcards: glob('{input_dir}/{sample}/*.fastq.gz'.format(sample=wildcards.sample))
+        lambda wildcards: glob('{base}/{sample}/*.fastq.gz'.format(sample=wildcards.sample, base=input_dir))
     output:
         temp("{hifi_outdir}/{sample}.filt.fastq.gz")
     conda:
