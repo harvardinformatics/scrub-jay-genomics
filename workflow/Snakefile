@@ -3,7 +3,7 @@ import glob
 
 #configfile: "../config/config.yaml"
 #Change these variables:
-input_dir = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/RAW_DATA/"
+input_dir = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/RAW_DATA"
 samples = ["MCZ_Orn_366497"]
 haplotypes=["hap1.p_ctg", "hap2.p_ctg", "p_ctg"]
 
