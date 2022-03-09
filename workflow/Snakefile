@@ -1,10 +1,10 @@
 import yaml
-import glob
+import glob, os
 
 #configfile: "../config/config.yaml"
 #Change these variables:
 input_dir = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/RAW_DATA"
-samples = ["MCZ_Orn_366497"] 
+samples = ["MCZ_Orn_366497"]
 haplotypes=["hap1.p_ctg", "hap2.p_ctg", "p_ctg"]
 
 #SAMPLES = [“sample1”, “sample2’]
@@ -13,6 +13,9 @@ haplotypes=["hap1.p_ctg", "hap2.p_ctg", "p_ctg"]
 hifiasm_path = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/hifiasm"
 hifi_outdir = "results/hifiasm_output_RAW"
 assem_outdir = "results/assemblies"
+
+def get_reads(wildcards):
+    return sorted(glob.glob('./*/*.fastq.gz',root_dir=input_dir))
 
 rule all:
     input:
@@ -23,13 +26,14 @@ rule all:
 rule adapterfilt:
     input:
         #"{reads}"
-        lambda wildcards: glob('{base}/{sample}/*.fastq.gz'.format(sample=wildcards.sample, base=input_dir))
+        #reads = lambda wildcards: glob('{base}/{sample}/*.fastq.gz'.format(sample=wildcards.sample, base=input_dir))
+        reads = get_reads,
     output:
         temp("{hifi_outdir}/{sample}.filt.fastq.gz")
     conda:
         "envs/adapter.yaml"
     shell:
-        "cutadapt --discard-trimmed --rev-comp --overlap=35 -b ATCTCTCTCAACAACAACAACGGAGGAGGAGGAAAAGAGAGAGAT -b ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT -o {output} -i {input}" #need change sample
+        "cutadapt --discard-trimmed --rev-comp --overlap=35 -b ATCTCTCTCAACAACAACAACGGAGGAGGAGGAAAAGAGAGAGAT -b ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT -o {output} -i {input.reads}" #need change sample
 
 rule hifi:
     input:
