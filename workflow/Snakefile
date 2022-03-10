@@ -25,21 +25,20 @@ rule all:
 
 rule adapterfilt:
     input:
-        #"{reads}"
         #reads = lambda wildcards: glob('{base}/{sample}/*.fastq.gz'.format(sample=wildcards.sample, base=input_dir))
-        reads = get_reads,
+        reads = get_reads
     output:
-        expand("{outdir}/{sample}.filt.fastq.gz", sample=samples, outdir=hifi_outdir) 
+        expand("{base}/{sample}.filt.fastq.gz", base=hifi_outdir, sample=samples)
     conda:
         "envs/adapter.yaml"
     shell:
-        "cutadapt --discard-trimmed --rev-comp --overlap=35 -b ATCTCTCTCAACAACAACAACGGAGGAGGAGGAAAAGAGAGAGAT -b ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT -o {output} -i {input.reads}" #need change sample
+        "cutadapt --discard-trimmed --rev-comp --overlap=35 -b ATCTCTCTCAACAACAACAACGGAGGAGGAGGAAAAGAGAGAGAT -b ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT -o {output} -i {input.reads}"
 
 rule hifi:
     input:
         expand("{base}/{sample}.filt.fastq.gz", base=hifi_outdir, sample=samples)
     output:
-        "{hifi_outdir}/{sample}.{haplo}.gfa"
+        expand("{base}/{sample}.{haplo}.gfa", base=hifi_outdir, sample=samples, haplo=haplotypes)
     params:
         prefix="{hifi_outdir}/{sample}"
     threads: 16
