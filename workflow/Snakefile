@@ -29,7 +29,7 @@ rule adapterfilt:
         #reads = lambda wildcards: glob('{base}/{sample}/*.fastq.gz'.format(sample=wildcards.sample, base=input_dir))
         reads = get_reads,
     output:
-        temp("{hifi_outdir}/{sample}.filt.fastq.gz")
+        expand("{outdir}/{sample}.filt.fastq.gz", sample=samples, outdir=hifi_outdir) 
     conda:
         "envs/adapter.yaml"
     shell:
@@ -37,7 +37,7 @@ rule adapterfilt:
 
 rule hifi:
     input:
-        expand("{base}/{sample}.filt.fastq.gz", base=hifiasm_path, sample=samples)
+        expand("{base}/{sample}.filt.fastq.gz", base=hifi_outdir, sample=samples)
     output:
         "{hifi_outdir}/{sample}.{haplo}.gfa"
     params:
