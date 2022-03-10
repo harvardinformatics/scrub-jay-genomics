@@ -1,5 +1,5 @@
 import yaml
-import glob, os
+import glob, os, pathlib
 
 #configfile: "../config/config.yaml"
 #Change these variables:
@@ -15,7 +15,7 @@ hifi_outdir = "results/hifiasm_output_RAW"
 assem_outdir = "results/assemblies"
 
 def get_reads(wildcards):
-    return sorted(glob.glob('./*/*.fastq.gz',root_dir=input_dir))
+    return sorted(glob(os.path.join(input_dir,'./*/*.fastq.gz')))
 
 rule all:
     input:
