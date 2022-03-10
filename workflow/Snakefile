@@ -49,7 +49,7 @@ rule gfa_to_fasta:
     input:
         expand("{base}/{sample}.{haplo}.gfa", base=hifi_outdir, sample=samples, haplo=haplotypes)
     output:
-        temp("{assem_outdir}/{sample}.{haplo}.fa")
+        expand("{assem}/{sample}.{haplo}.fa", assem=assem_outdir,sample=samples,haplo=haplotypes)
     shell:
         "awk '/^S/{print \">\"$2;print $3}' {input} > {output}"
 
@@ -57,7 +57,7 @@ rule rename_contig:
     input:
         expand("{base}/{sample}.{haplo}.fa", base=assem_outdir, sample=samples, haplo=haplotypes)
     output:
-        "{assem_outdir}/{sample}.{haplo}.rename.fa"
+        expand("{assem}/{sample}.{haplo}.rename.fa", assem=assem_outdir, sample=samples,haplo=haplotypes)
     run:
         fasta=open(input)
         newfasta=open(output,'w')
