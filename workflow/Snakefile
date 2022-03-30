@@ -14,8 +14,8 @@ hifiasm_path = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/hifiasm"
 hifi_outdir = "results/hifiasm_output_RAW"
 assem_outdir = "results/assemblies"
 
-def get_reads(wildcards):
-    return sorted(glob(os.path.join(input_dir,'./*/*.fastq.gz')))
+#def get_reads(wildcards):
+#    return sorted(glob(os.path.join(input_dir,'./*/*.fastq.gz')))
 
 rule all:
     input:
@@ -26,9 +26,9 @@ rule all:
 rule adapterfilt:
     input:
         #reads = lambda wildcards: glob('{base}/{sample}/*.fastq.gz'.format(sample=wildcards.sample, base=input_dir))
-        reads = get_reads
+        reads = input_dir + "/{sample}/" + "{read}.fastq.gz"
     output:
-        expand("{base}/{sample}.filt.fastq.gz", base=hifi_outdir, sample=samples)
+        hifi_outdir + "/{sample}.filt.fastq.gz"
     conda:
         "envs/adapter.yaml"
     shell:
@@ -36,9 +36,9 @@ rule adapterfilt:
 
 rule hifi:
     input:
-        expand("{base}/{sample}.filt.fastq.gz", base=hifi_outdir, sample=samples)
+        hifi_outdir + "/{sample}.filt.fastq.gz"
     output:
-        expand("{base}/{sample}.{haplo}.gfa", base=hifi_outdir, sample=samples, haplo=haplotypes)
+        hifi_outdir + "/{sample}.{haplo}.gfa"
     params:
         prefix="{hifi_outdir}/{sample}"
     threads: 16
@@ -47,17 +47,17 @@ rule hifi:
 
 rule gfa_to_fasta:
     input:
-        expand("{base}/{sample}.{haplo}.gfa", base=hifi_outdir, sample=samples, haplo=haplotypes)
+        hifi_outdir + "/{sample}.{haplo}.gfa"
     output:
-        expand("{assem}/{sample}.{haplo}.fa", assem=assem_outdir,sample=samples,haplo=haplotypes)
+        assem_outdir + "/{sample}.{haplo}.fa"
     shell:
         "awk '/^S/{print \">\"$2;print $3}' {input} > {output}"
 
 rule rename_contig:
     input:
-        expand("{base}/{sample}.{haplo}.fa", base=assem_outdir, sample=samples, haplo=haplotypes)
+        assem_outdir + "/{sample}.{haplo}.fa"
     output:
-        expand("{assem}/{sample}.{haplo}.rename.fa", assem=assem_outdir, sample=samples,haplo=haplotypes)
+        assem_outdir + "/{sample}.{haplo}.rename.fa"
     run:
         fasta=open(input)
         newfasta=open(output,'w')
@@ -73,7 +73,7 @@ rule rename_contig:
 
 rule quast:
     input:
-        expand("{base}/{sample}.{haplo}.rename.fa", base=assem_outdir, sample=samples, haplo=haplotypes)
+        assem_outdir + "/{sample}.{haplo}.rename.fa"
     params: #trying alternative way that's less hack-y
         prefix="results/assembly_qc/{sample}.{haplo}_quast"
     output:
