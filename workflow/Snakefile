@@ -1,44 +1,60 @@
 import yaml
 import glob, os, pathlib
 
-#configfile: "../config/config.yaml"
+#load sample sheet into dictionary where key=sample ID, value=file paths
+samsheet="/n/holylfs05/LABS/informatics/Everyone/scrubjay/RAW_DATA/sample_sheet.tsv"
+samdict = {}
+with open(samsheet) as fin:
+    for line in fin:
+        line = line.rstrip()
+        data = line.split("\t")
+        data[1] = data[1].replace(",", " ")
+        samdict[data[0]] = data[1]
+
 #Change these variables:
 input_dir = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/RAW_DATA"
-samples = ["MCZ_Orn_366497"]
+#samples = ["MCZ_Orn_366497"]
+samples = list(samdict.keys())
 haplotypes=["hap1.p_ctg", "hap2.p_ctg", "p_ctg"]
 
-#SAMPLES = [“sample1”, “sample2’]
-#expand({sample}_quast.done, sample=SAMPLES)
 
 hifiasm_path = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/hifiasm"
 hifi_outdir = "results/hifiasm_output_RAW"
 assem_outdir = "results/assemblies"
 
-#def get_reads(wildcards):
-#    return sorted(glob(os.path.join(input_dir,'./*/*.fastq.gz')))
+
+def get_reads(wildcards):
+    return samdict[wildcards.sample]
 
 rule all:
     input:
         expand("results/assembly_qc/{sample}_{haplo}_quast/report.txt", haplo=haplotypes, sample=samples)
 
-#reads = glob.glob(f"{input_dir}/{sample}/*/*.fastq.gz")
+rule merge:
+    input:
+        get_reads
+    output:
+        temp("{sample}_combined_reads.fastq.gz")
+    shell:
+        "cat {input} > {output}"
 
 rule adapterfilt:
     input:
         #reads = lambda wildcards: glob('{base}/{sample}/*.fastq.gz'.format(sample=wildcards.sample, base=input_dir))
-        reads = input_dir + "/{sample}/" + "{read}.fastq.gz"
+        #reads = input_dir + "/{sample}/" + "{read}.fastq.gz" #this is incorrect, as reads are in subdirectories of sample directory!
+        "{sample}_combined_reads.fastq.gz"
     output:
-        hifi_outdir + "/{sample}.filt.fastq.gz"
+        temp(hifi_outdir + "/{sample}.filt.fastq.gz")
     conda:
         "envs/adapter.yaml"
     shell:
-        "cutadapt --discard-trimmed --rev-comp --overlap=35 -b ATCTCTCTCAACAACAACAACGGAGGAGGAGGAAAAGAGAGAGAT -b ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT -o {output} -i {input.reads}"
+        "cutadapt --discard-trimmed --rev-comp --overlap=35 -b ATCTCTCTCAACAACAACAACGGAGGAGGAGGAAAAGAGAGAGAT -b ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT -o {output} -i {input}"
 
 rule hifi:
     input:
         hifi_outdir + "/{sample}.filt.fastq.gz"
     output:
-        hifi_outdir + "/{sample}.{haplo}.gfa"
+        temp(hifi_outdir + "/{sample}.{haplo}.gfa")
     params:
         prefix="{hifi_outdir}/{sample}"
     threads: 16
@@ -49,15 +65,15 @@ rule gfa_to_fasta:
     input:
         hifi_outdir + "/{sample}.{haplo}.gfa"
     output:
-        assem_outdir + "/{sample}.{haplo}.fa"
+        temp(hifi_outdir + "/{sample}.{haplo}.fa")
     shell:
         "awk '/^S/{print \">\"$2;print $3}' {input} > {output}"
 
 rule rename_contig:
     input:
-        assem_outdir + "/{sample}.{haplo}.fa"
+        hifi_outdir + "/{sample}.{haplo}.fa"
     output:
-        assem_outdir + "/{sample}.{haplo}.rename.fa"
+        assem_outdir + "/{sample}.{haplo}.fa"
     run:
         fasta=open(input)
         newfasta=open(output,'w')
@@ -73,17 +89,17 @@ rule rename_contig:
 
 rule quast:
     input:
-        assem_outdir + "/{sample}.{haplo}.rename.fa"
+        assem_outdir + "/{sample}.{haplo}.fa"
     params: #trying alternative way that's less hack-y
-        prefix="results/assembly_qc/{sample}.{haplo}_quast"
+        prefix="results/assembly_qc/{sample}_{haplo}_quast"
     output:
         #quast_dir = directory("results/assembly_qc/{sample}_quast")
         #quast_done = touch("results/assembly_qc/{sample}_quast/{sample}_QUAST.done")
-        "results/assembly_qc/{sample}.{haplo}_quast/report.txt"
+        "{params.prefix}/report.txt"
     conda:
         "envs/quast.yaml"
     threads: 4
     log:
-        "logs/{sample}.{haplo}/quast_log/"
+        "logs/{sample}_{haplo}/quast_log/"
     shell:
         "quast.py -t {threads} --eukaryote -o {params.prefix} {input} &> {log}"
