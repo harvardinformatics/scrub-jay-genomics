@@ -2,29 +2,37 @@ import yaml
 import glob, os, pathlib
 
 #load sample sheet into dictionary where key=sample ID, value=file paths
-samsheet="/n/holylfs05/LABS/informatics/Everyone/scrubjay/RAW_DATA/sample_sheet.tsv"
+samsheet="/n/holylfs05/LABS/informatics/Everyone/scrubjay/RAW_DATA/sample_sheet.txt"
 samdict = {}
 with open(samsheet) as fin:
     for line in fin:
         line = line.rstrip()
+        line = line.replace(",", " ")
         data = line.split("\t")
-        data[1] = data[1].replace(",", " ")
-        samdict[data[0]] = data[1]
+        #samdict[data[0]] = data[1]
+        samdict[data[0]] = {'reads' : data[2], 'HiC' : data[3]}
 
 #Change these variables:
 input_dir = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/RAW_DATA"
-#samples = ["MCZ_Orn_366497"]
-samples = list(samdict.keys())
+samples = ["MCZ_Orn_366497"]
+#samples = list(samdict.keys())
 haplotypes=["hap1.p_ctg", "hap2.p_ctg", "p_ctg"]
-
-
 hifiasm_path = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/hifiasm"
 hifi_outdir = "results/hifiasm_output_RAW"
 assem_outdir = "results/assemblies"
 
 
 def get_reads(wildcards):
-    return samdict[wildcards.sample]
+    return samdict[wildcards.sample]['reads']
+
+def get_hifi_params(wildcards):
+    if samdict[wildcards.sample]['HiC'] == "none":
+        return "-o " + hifi_outdir + "/" + wildcards.sample
+    else:
+        #first split samdict[wildcards.sample]['HiC'] on space into a list
+        hic_reads = samdict[wildcards.sample]['HiC'].split(" ")
+        return "-o " + hifi_outdir + "/" + wildcards.sample + " --h1 " + hic_reads[0] +
+            "--h2 " + hic_reads[1]
 
 rule all:
     input:
@@ -56,10 +64,10 @@ rule hifi:
     output:
         temp(hifi_outdir + "/{sample}.{haplo}.gfa")
     params:
-        prefix="{hifi_outdir}/{sample}"
+        get_hifi_params
     threads: 16
     shell:
-        "{hifiasm_path}/hifiasm -t {threads} -o {params.prefix} {input}"
+        "{hifiasm_path}/hifiasm -t {threads} -o {params} {input}"
 
 rule gfa_to_fasta:
     input:
