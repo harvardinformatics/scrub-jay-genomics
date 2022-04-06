@@ -61,7 +61,7 @@ rule hifi:
     input:
         hifi_outdir + "/{sample}.filt.fastq.gz"
     output:
-        temp(hifi_outdir + "/{sample}.{haplo}.gfa")
+        temp(hifi_outdir + "/{sample}-{haplo}.gfa")
     params:
         get_hifi_params
     threads: 16
@@ -70,17 +70,17 @@ rule hifi:
 
 rule gfa_to_fasta:
     input:
-        hifi_outdir + "/{sample}.{haplo}.gfa"
+        hifi_outdir + "/{sample}-{haplo}.gfa"
     output:
-        temp(hifi_outdir + "/{sample}.{haplo}.fa")
+        temp(hifi_outdir + "/{sample}-{haplo}.fa")
     shell:
         "awk '/^S/{print \">\"$2;print $3}' {input} > {output}"
 
 rule rename_contig:
     input:
-        hifi_outdir + "/{sample}.{haplo}.fa"
+        hifi_outdir + "/{sample}-{haplo}.fa"
     output:
-        assem_outdir + "/{sample}.{haplo}.fa"
+        assem_outdir + "/{sample}-{haplo}.fa"
     run:
         fasta=open(input)
         newfasta=open(output,'w')
@@ -96,7 +96,7 @@ rule rename_contig:
 
 rule quast:
     input:
-        assem_outdir + "/{sample}.{haplo}.fa"
+        assem_outdir + "/{sample}-{haplo}.fa"
     params: #trying alternative way that's less hack-y
         prefix="results/assembly_qc/{sample}-{haplo}-quast"
     output:
