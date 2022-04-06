@@ -14,7 +14,7 @@ with open(samsheet) as fin:
 
 #Change these variables:
 input_dir = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/RAW_DATA"
-samples = ["MCZ_Orn_366497"]
+samples = ["AW_366497"]
 #samples = list(samdict.keys())
 haplotypes=["hap1.p_ctg", "hap2.p_ctg", "p_ctg"]
 hifiasm_path = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/hifiasm"
@@ -31,8 +31,7 @@ def get_hifi_params(wildcards):
     else:
         #first split samdict[wildcards.sample]['HiC'] on space into a list
         hic_reads = samdict[wildcards.sample]['HiC'].split(" ")
-        return "-o " + hifi_outdir + "/" + wildcards.sample + " --h1 " + hic_reads[0] +
-            "--h2 " + hic_reads[1]
+        return "-o " + hifi_outdir + "/" + wildcards.sample + " --h1 " + hic_reads[0] + "--h2 " + hic_reads[1]
 
 rule all:
     input:
@@ -103,7 +102,7 @@ rule quast:
     output:
         #quast_dir = directory("results/assembly_qc/{sample}_quast")
         #quast_done = touch("results/assembly_qc/{sample}_quast/{sample}_QUAST.done")
-        "{params.prefix}/report.txt"
+        "results/assembly_qc/{sample}_{haplo}_quast/report.txt"
     conda:
         "envs/quast.yaml"
     threads: 4
