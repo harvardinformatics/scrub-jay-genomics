@@ -35,7 +35,7 @@ def get_hifi_params(wildcards):
 
 rule all:
     input:
-        expand("results/assembly_qc/{sample}_{haplo}_quast/report.txt", haplo=haplotypes, sample=samples)
+        expand("results/assembly_qc/{sample}-{haplo}-quast/report.txt", haplo=haplotypes, sample=samples)
 
 rule merge:
     input:
@@ -98,15 +98,15 @@ rule quast:
     input:
         assem_outdir + "/{sample}.{haplo}.fa"
     params: #trying alternative way that's less hack-y
-        prefix="results/assembly_qc/{sample}_{haplo}_quast"
+        prefix="results/assembly_qc/{sample}-{haplo}-quast"
     output:
         #quast_dir = directory("results/assembly_qc/{sample}_quast")
         #quast_done = touch("results/assembly_qc/{sample}_quast/{sample}_QUAST.done")
-        "results/assembly_qc/{sample}_{haplo}_quast/report.txt"
+        "results/assembly_qc/{sample}-{haplo}-quast/report.txt"
     conda:
         "envs/quast.yaml"
     threads: 4
     log:
-        "logs/{sample}_{haplo}/quast_log/"
+        "logs/{sample}-{haplo}/quast_log/"
     shell:
         "quast.py -t {threads} --eukaryote -o {params.prefix} {input} &> {log}"
