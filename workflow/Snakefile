@@ -23,7 +23,8 @@ assem_outdir = "results/assemblies"
 
 
 def get_reads(wildcards):
-    return samdict[wildcards.sample]['reads']
+    files = samdict[wildcards.sample]['reads'].split(" ")
+    return files
 
 def get_hifi_params(wildcards):
     if samdict[wildcards.sample]['HiC'] == "none":
@@ -74,7 +75,7 @@ rule gfa_to_fasta:
     output:
         temp(hifi_outdir + "/{sample}-{haplo}.fa")
     shell:
-        "awk '/^S/{print \">\"$2;print $3}' {input} > {output}"
+        "awk '/^S/{{print \">\"$2;print $3}}' {input} > {output}"
 
 rule rename_contig:
     input:
