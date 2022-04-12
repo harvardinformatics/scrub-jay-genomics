@@ -16,7 +16,7 @@ with open(samsheet) as fin:
 input_dir = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/RAW_DATA"
 samples = ["AW_366497"]
 #samples = list(samdict.keys())
-haplotypes=["hap1.p_ctg", "hap2.p_ctg", "p_ctg"]
+haplotypes=["p_ctg", "hap1.p_ctg", "hap2.p_ctg"] #changed these to match hifi output...THO won't match with Hi-C assembly!! >:|
 hifiasm_path = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/hifiasm"
 hifi_outdir = "results/hifiasm_output_RAW"
 assem_outdir = "results/assemblies"
@@ -48,8 +48,6 @@ rule merge:
 
 rule adapterfilt:
     input:
-        #reads = lambda wildcards: glob('{base}/{sample}/*.fastq.gz'.format(sample=wildcards.sample, base=input_dir))
-        #reads = input_dir + "/{sample}/" + "{read}.fastq.gz" #this is incorrect, as reads are in subdirectories of sample directory!
         "{sample}_combined_reads.fastq.gz"
     output:
         temp(hifi_outdir + "/{sample}.filt.fastq.gz")
@@ -62,7 +60,9 @@ rule hifi:
     input:
         hifi_outdir + "/{sample}.filt.fastq.gz"
     output:
-        temp(hifi_outdir + "/{sample}-{haplo}.gfa")
+        hifi_outdir + "/{sample}.p_ctg.gfa", #changed this to have single wildcard, will it work?
+        hifi_outdir + "/{sample}.hap1.p_ctg.gfa",
+        hifi_outdir + "/{sample}.hap2.p_ctg.gfa"
     params:
         get_hifi_params
     threads: 16
@@ -71,17 +71,17 @@ rule hifi:
 
 rule gfa_to_fasta:
     input:
-        hifi_outdir + "/{sample}-{haplo}.gfa"
+        hifi_outdir + "/{sample}.{haplo}.gfa"
     output:
-        temp(hifi_outdir + "/{sample}-{haplo}.fa")
+        temp(hifi_outdir + "/{sample}.{haplo}.fa")
     shell:
         "awk '/^S/{{print \">\"$2;print $3}}' {input} > {output}"
 
 rule rename_contig:
     input:
-        hifi_outdir + "/{sample}-{haplo}.fa"
+        hifi_outdir + "/{sample}.{haplo}.fa"
     output:
-        assem_outdir + "/{sample}-{haplo}.fa"
+        assem_outdir + "/{sample}.{haplo}.fa"
     run:
         fasta=open(input)
         newfasta=open(output,'w')
@@ -97,12 +97,10 @@ rule rename_contig:
 
 rule quast:
     input:
-        assem_outdir + "/{sample}-{haplo}.fa"
+        assem_outdir + "/{sample}.{haplo}.fa"
     params: #trying alternative way that's less hack-y
         prefix="results/assembly_qc/{sample}-{haplo}-quast"
     output:
-        #quast_dir = directory("results/assembly_qc/{sample}_quast")
-        #quast_done = touch("results/assembly_qc/{sample}_quast/{sample}_QUAST.done")
         "results/assembly_qc/{sample}-{haplo}-quast/report.txt"
     conda:
         "envs/quast.yaml"
