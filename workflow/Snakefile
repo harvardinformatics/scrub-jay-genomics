@@ -28,11 +28,13 @@ def get_reads(wildcards):
 
 def get_hifi_params(wildcards):
     if samdict[wildcards.sample]['HiC'] == "none":
-        return "-o " + hifi_outdir + "/" + wildcards.sample
+        return {'useHiC' : "false", 'h1' : 'none', 'h2' : "none", 'outdir' : hifi_outdir + "/" + wildcards.sample}
+#        return hifi_outdir + "/" + wildcards.sample
     else:
         #first split samdict[wildcards.sample]['HiC'] on space into a list
         hic_reads = samdict[wildcards.sample]['HiC'].split(" ")
-        return "-o " + hifi_outdir + "/" + wildcards.sample + " --h1 " + hic_reads[0] + "--h2 " + hic_reads[1]
+#        return hifi_outdir + "/" + wildcards.sample + " --h1 " + hic_reads[0] + "--h2 " + hic_reads[1]
+        return {'useHiC' : "true", 'h1' : hic_reads[0], 'h2' : hic_reads[1], 'outdir' : hifi_outdir + "/" + wildcards.sample}}
 
 rule all:
     input:
@@ -60,14 +62,27 @@ rule hifi:
     input:
         hifi_outdir + "/{sample}.filt.fastq.gz"
     output:
-        hifi_outdir + "/{sample}.p_ctg.gfa", #changed this to have single wildcard, will it work?
-        hifi_outdir + "/{sample}.hap1.p_ctg.gfa",
-        hifi_outdir + "/{sample}.hap2.p_ctg.gfa"
+        pasm = hifi_outdir + "/{sample}.p_ctg.gfa", #changed this to have single wildcard, will it work?
+        hap1asm = hifi_outdir + "/{sample}.hap1.p_ctg.gfa",
+        hap2asm = hifi_outdir + "/{sample}.hap2.p_ctg.gfa"
     params:
         get_hifi_params
     threads: 16
     shell:
-        "{hifiasm_path}/hifiasm -t {threads} -o {params} {input}"
+        """
+        if [[ {params.useHiC} eq "true" ]]; then
+            {hifiasm_path}/hifiasm -t {threads} --h1 {params.h1} --h2 {params.h2} -o {params.outdir} {input}
+            mv {params.outdir}.hic.p_ctg.gfa {output.pasm}
+            mv {params.outdir}.hic.hap1.p_ctg.gfa {output.hap1asm}
+            mv {params.outdir}.hic.hap2.p_ctg.gfa {output.hap2asm}
+        elif [[ {params.useHiC} eq "false" ]]; then
+            {hifiasm_path}/hifiasm -t {threads} -o {params.outdir} {input}
+            mv {params.outdir}.bp.p_ctg.gfa {output.pasm}
+            mv {params.outdir}.bp.hap1.p_ctg.gfa {output.hap1asm}
+            mv {params.outdir}.bp.hap2.p_ctg.gfa {output.hap2asm}
+        fi
+        """
+#        "{hifiasm_path}/hifiasm -t {threads} -o {params} {input}"
 
 rule gfa_to_fasta:
     input:
