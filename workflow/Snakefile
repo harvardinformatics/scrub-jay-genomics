@@ -98,18 +98,8 @@ rule rename_contig:
         hifi_outdir + "/{sample}.{haplo}.fa"
     output:
         assem_outdir + "/{sample}.{haplo}.fa"
-    run:
-        fasta=open(input)
-        newfasta=open(output,'w')
-        for line in fasta:
-            if line.startswith('>'):
-                ID=line.replace(">", "")
-                newID= '>' + sample + '#' + haplo + '#' + ID + '\n'
-                newfasta.write(newID)
-            else:
-                newfasta.write(line)
-        fasta.close()
-        newfasta.close()
+    shell:
+        "awk -v sample={wildcards.sample} -v haplo={wildcards.haplo} 'BEGIN{{FS=\">\"; OFS=\".\"}} /^>/{{print \">\"$2,sample,haplo}} !/^>/{{print;}}' {input} > {output}"
 
 rule quast:
     input:
