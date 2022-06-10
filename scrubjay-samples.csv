@@ -1,17 +1,4 @@
 ﻿Species,Original file ID,Sample ID,Status,Bird ID,sex,age,date,mass,COUNTRY,STATE_PROV,MAX_ELEV_IN_M,SPEC_LOCALITY,DEC_LAT,DEC_LONG
-Aphelocoma coerulescens woodhouseii,MCZ_orn_365326,MCZ_Orn_365326,ASSEMBLED,,male ,,9-Oct-18,,United States,New Mexico,2062,ca. 44.6 km E Blanco,36.73638,-107.74392
-Aphelocoma coerulescens woodhouseii,MCZ_Orn_365327,MCZ_Orn_365327,ASSEMBLED,,male ,,9-Oct-18,,United States,New Mexico,2062,ca. 44.6 km E Blanco,36.71058,-107.32374
-Aphelocoma coerulescens woodhouseii,MCZ_Orn_365335,MCZ_Orn_365335,ASSEMBLED,,female ,,13-Oct-18,,United States,New Mexico,1875,ca. 27.7 km ENE Blanco,36.798,-107.52766
-Aphelocoma coerulescens woodhouseii,MCZ_Orn_365336,MCZ_Orn_365336,ASSEMBLED; HiC scaffold,,female ,,13-Oct-18,,United States,New Mexico,1875,ca. 27.7 km ENE Blanco,36.798,-107.52766
-Aphelocoma coerulescens woodhouseii,MCZ_Orn_365337,MCZ_Orn_365337,ASSEMBLED,,male ,,13-Oct-18,,United States,New Mexico,1875,ca. 27.7 km ENE Blanco,36.798,-107.52766
-Aphelocoma coerulescens woodhouseii,MCZ_orn_365338,MCZ_Orn_365338,ASSEMBLED; HiC scaffold,,male ,,13-Oct-18,,United States,New Mexico,1875,ca. 27.7 km ENE Blanco,36.798,-107.52766
-Aphelocoma coerulescens woodhouseii,MCZ_Orn_366487,MCZ_Orn_366487,ASSEMBLED,,male ,,2-Jun-21,,United States,New Mexico,2100,ca 7.2 km NE Cedar Hill,36.9815,-107.828
-Aphelocoma coerulescens woodhouseii,MCZ_Orn_366488,MCZ_Orn_366488,ASSEMBLED,,female ,,2-Jun-21,,United States,New Mexico,1989,ca 15.4 km East of Cedar Hill,36.944215,-107.713354
-Aphelocoma coerulescens woodhouseii,MCZ_Orn_366490,MCZ_Orn_366490,ASSEMBLED,,male ,,3-Jun-21,,United States,New Mexico,1827,ca 12.1 km East of Turley,36.76897222,-107.6303056
-Aphelocoma coerulescens woodhouseii,MCZ_orn_366493,MCZ_Orn_366493,ASSEMBLED,,female ,,3-Jun-21,,United States,New Mexico,1822,ca 4.1 km North of Turley,36.78830556,-107.7547778
-Aphelocoma coerulescens woodhouseii,MCZ_orn_366494,MCZ_Orn_366494,ASSEMBLED,,female ,,3-Jun-21,,United States,New Mexico,1858,ca 5.6 km North of Turley,36.80290278,-107.7521
-Aphelocoma coerulescens woodhouseii,MCZ_Orn_366498,MCZ_Orn_366498,ASSEMBLED,,female ,,4-Jun-21,,United States,New Mexico,1915,ca 12.8 km East of Navajo Dam City,36.8047,-107.5531
-Aphelocoma coerulescens woodhouseii,MCZ_Orn_366499,MCZ_Orn_366499,ASSEMBLED,,female ,,4-Jun-21,,United States,New Mexico,1965,ca 16 km East of Turley,36.758102,-107.585812
 Aphelocoma coerulescens,Florida_bird_1603_72852,1603_72852,Awaiting assembly,RG-X,,AHY (2019),2/1/22,71.4,,,,SFLC,,
 Aphelocoma coerulescens,,1603_72872,Awaiting data,BP-X,,AHY (2019),1/18/22,,,,,RAUL,,
 Aphelocoma coerulescens,,1713_89780,Awaiting data,RQR-,,AHY (2015),2/1/22,78.5,,,,CRSM,,
@@ -41,6 +28,19 @@ Aphelocoma insularis,Bird_1603_79315,1603_79315,ASSEMBLED,"WOY,AR",F,HY,9/17/09,
 Aphelocoma insularis,Bird_1573_28004,1703_64680,ASSEMBLED,"AB,YG",M,ASY,6/23/09,,,,,SZ FS,,
 Aphelocoma insularis,Bird_1603-78721,1833_00513,ASSEMBLED,"YYU,AP",M,ASY,11/6/10,,,,,SZ PZ,,
 Aphelocoma insularis,Bird_1603_79269,1833_00687,ASSEMBLED,"RUY,AP",M,SY,3/21/09,,,,,SZ PZ,,
-Cissilopha sanblasiana yucatanica,MCZ_Cryo_8788,MCZ_Cryo_8788,ASSEMBLED; HiC scaffold,,male,,,,,,,,,
-Aphelocoma coerulescens woodhouseii,MCZ_Orn_365339,MCZ_Orn_365339,ASSEMBLED,,female,,13-Oct-18,,United States,New Mexico,1875,ca. 27.7 km ENE Blanco,36.798,-107.52766
-Aphelocoma coerulescens woodhouseii,MCZ_Orn_366497,MCZ_Orn_366497,ASSEMBLED,,male,,4-Jun-21,,United States,New Mexico,1915,ca 12.8 km East of Navajo Dam City,36.8047,-107.5531
+Aphelocoma woodhouseii,MCZ_orn_365326,365326,ASSEMBLED,,male ,,9-Oct-18,,United States,New Mexico,2062,ca. 44.6 km E Blanco,36.73638,-107.74392
+Aphelocoma woodhouseii,MCZ_Orn_365327,365327,ASSEMBLED,,male ,,9-Oct-18,,United States,New Mexico,2062,ca. 44.6 km E Blanco,36.71058,-107.32374
+Aphelocoma woodhouseii,MCZ_Orn_365335,365335,ASSEMBLED,,female ,,13-Oct-18,,United States,New Mexico,1875,ca. 27.7 km ENE Blanco,36.798,-107.52766
+Aphelocoma woodhouseii,MCZ_Orn_365336,365336,ASSEMBLED; HiC scaffold; ref assembly in progress,,female ,,13-Oct-18,,United States,New Mexico,1875,ca. 27.7 km ENE Blanco,36.798,-107.52766
+Aphelocoma woodhouseii,MCZ_Orn_365337,365337,ASSEMBLED,,male ,,13-Oct-18,,United States,New Mexico,1875,ca. 27.7 km ENE Blanco,36.798,-107.52766
+Aphelocoma woodhouseii,MCZ_orn_365338,365338,ASSEMBLED; HiC scaffold,,male ,,13-Oct-18,,United States,New Mexico,1875,ca. 27.7 km ENE Blanco,36.798,-107.52766
+Aphelocoma woodhouseii,MCZ_Orn_365339,365339,ASSEMBLED,,female,,13-Oct-18,,United States,New Mexico,1875,ca. 27.7 km ENE Blanco,36.798,-107.52766
+Aphelocoma woodhouseii,MCZ_Orn_366487,366487,ASSEMBLED,,male ,,2-Jun-21,,United States,New Mexico,2100,ca 7.2 km NE Cedar Hill,36.9815,-107.828
+Aphelocoma woodhouseii,MCZ_Orn_366488,366488,ASSEMBLED,,female ,,2-Jun-21,,United States,New Mexico,1989,ca 15.4 km East of Cedar Hill,36.944215,-107.713354
+Aphelocoma woodhouseii,MCZ_Orn_366490,366490,ASSEMBLED,,male ,,3-Jun-21,,United States,New Mexico,1827,ca 12.1 km East of Turley,36.76897222,-107.6303056
+Aphelocoma woodhouseii,MCZ_orn_366493,366493,ASSEMBLED,,female ,,3-Jun-21,,United States,New Mexico,1822,ca 4.1 km North of Turley,36.78830556,-107.7547778
+Aphelocoma woodhouseii,MCZ_orn_366494,366494,ASSEMBLED,,female ,,3-Jun-21,,United States,New Mexico,1858,ca 5.6 km North of Turley,36.80290278,-107.7521
+Aphelocoma woodhouseii,MCZ_Orn_366497,366497,ASSEMBLED,,male,,4-Jun-21,,United States,New Mexico,1915,ca 12.8 km East of Navajo Dam City,36.8047,-107.5531
+Aphelocoma woodhouseii,MCZ_Orn_366498,366498,ASSEMBLED,,female ,,4-Jun-21,,United States,New Mexico,1915,ca 12.8 km East of Navajo Dam City,36.8047,-107.5531
+Aphelocoma woodhouseii,MCZ_Orn_366499,366499,ASSEMBLED,,female ,,4-Jun-21,,United States,New Mexico,1965,ca 16 km East of Turley,36.758102,-107.585812
+Cissilopha sanblasiana yucatanica,MCZ_Cryo_8788,8788,ASSEMBLED; HiC scaffold,,male,,,,,,,,,
