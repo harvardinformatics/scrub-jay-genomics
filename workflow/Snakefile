@@ -99,7 +99,7 @@ rule rename_contig:
     output:
         assem_outdir + "/{sample}.{haplo}.fa"
     shell:
-        "awk -v sample={wildcards.sample} -v haplo={wildcards.haplo} 'BEGIN{{FS=\">\"; OFS=\".\"}} /^>/{{print \">\"$2,sample,haplo}} !/^>/{{print;}}' {input} > {output}"
+        "awk -v sample={wildcards.sample} -v haplo={wildcards.haplo} 'BEGIN{{FS=\">\"; OFS=\"#\"}} /^>/{{if (haplo ~ /hap/) print \">\"sample,haplo,$2; else print \">\"sample,\"pri\",$2}} !/^>/{{print;}}' {input} > {output}"
 
 rule quast:
     input:
