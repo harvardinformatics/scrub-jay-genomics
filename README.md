@@ -34,5 +34,9 @@ Revelant output files can be found on the Cannon cluster at `/n/holylfs05/LABS/i
     - Contains same files as above   
 
 ### SRF SATELLITES  
-- `satellite/sj_sats_combined_assem.fa`: SRF output with satellites from from combined assemblies  
-- `satellite/sj_sats_vs_*/`: combined satellites mapped against individual assemblies
+- `satellite/sj_sats_combined_assem.fa`: KMC+SRF output with satellites from all combined (primary) assemblies  
+- `satellite/sj_sats_vs_*/`: combined satellites mapped against individual assemblies  
+    - `sj_sats_srf-aln_vs_A[W|I|C]_*.bed`: combined satellites mapped vs the individual genome  
+    - `sj_sats_srf-aln_vs_A[W|I|C]_*_reads.bed`: combined satellites mapped vs the individual genomic **reads**  
+        - There are also `.paf` (alignment) files and `.len` (repeat count summary) files for each sample  
+- `results/satellite/individual_vs_reads/`: KMC+SRF output from **individual** reads (i.e. NOT combined satellites) 
