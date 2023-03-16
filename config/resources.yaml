@@ -1,0 +1,9 @@
+# quast
+quast:
+  threads: 4
+  mem: 5000
+
+#busco
+busco:
+  threads: 4
+  mem: 5000

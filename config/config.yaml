@@ -1,0 +1,16 @@
+##############################
+# Variables you need to change
+##############################
+
+sample: "MCZ_Cryo"               #Name of the sample to act as base name
+reads: "path/to/reads"           #Reads used to generate assembly
+busco_mode: "geno"                #busco run mode (geno = genome assembly; prot = protein set; tran = transcript assembly)
+busco_lineage: "bacteria_odb10"   #busco lineage to use for assessment
+
+##############################
+# Variables you DO NOT need to change
+# if you do, ensure all path/directory names are followed by a "/"
+# These variables control the output of the fastq2bam workflow. You don't need to change these, but if you do please have a forward slash follow name!
+##############################
+
+#output: "results/"
