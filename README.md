@@ -20,7 +20,8 @@ Revelant output files can be found on the Cannon cluster at `/n/holylfs05/LABS/i
     - AW = *A. woodhouseii*, Woodhouse scrub jay  
     - CY = Yucatan scrub jay  
 - `assemblies/*hap[1|2].p_ctg.fasta`: unscaffolded haplotype assemblies  
-- `assembly_qc/`: basic assembly stats
+- `assembly_qc/`: basic assembly stats  
+- `assembly_qc/ASSEMBLY_STATS.tsv`: summary file of basic stats, primary and haplotype
 ### PANGENOME GRAPHS AND ANALYSIS  
 - *NB:* as of 2/1/23, several communities are still in process of construction
 - `PGGB/combined_assemblies.partition.paf`: alignment file of *all assembly haplotypes*, plus reference and Yucatan jay
