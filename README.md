@@ -42,4 +42,12 @@ Revelant output files can be found on the Cannon cluster at `/n/holylfs05/LABS/i
     - `sj_sats_srf-aln_vs_A[W|I|C]_*.bed`: combined satellites mapped vs the individual genome  
     - `sj_sats_srf-aln_vs_A[W|I|C]_*_reads.bed`: combined satellites mapped vs the individual genomic **reads**  
         - There are also `.paf` (alignment) files and `.len` (repeat count summary) files for each sample  
-- `results/satellite/individual_vs_reads/`: KMC+SRF output from **individual** reads (i.e. NOT combined satellites) 
+- `results/satellite/individual_vs_reads/`: KMC+SRF output from **individual** reads (i.e. NOT combined satellites)  
+
+### GENE ANNOTATION  
+- `gene_annotation/stringtie_RNAseq`: annotation with Illumina, done using stringtie + hisat. BUSCO completeness 97%  
+    - `scrubjay_stringtie_merge.gtf`: merged GTF file from all samples  
+    - `scrubjay_stringtie_transcripts.fa`: transcripts extracted using gffread  
+- `gene_annotation/IsoQuant/`: annotation using PacBio Isoseq, done using IsoQuant. BUSCO completeness 88%  
+    - `isoquant_merge.gtf`: merged GTF file  
+    - `transcripts.fa`: transcripts extracted using gffread
