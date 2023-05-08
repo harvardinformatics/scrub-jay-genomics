@@ -31,8 +31,8 @@ Revelant output files can be found on the Cannon cluster at `/n/holylfs05/LABS/i
     - `PGGB/allbird_community.[0-9]/*.paf`: alignment file of sequences in community  
     - `PGGB/allbird_community.[0-9]/*.og`: PGGB graph format of alignment (input to ODGI for visualization)  
     - `PGGB/allbird_community.[0-9]/*.gfa`: standard graph format of alignment  
-    - `PGGB/allbird_community.[0-9]/*.vcf`: varaiant call format file deconstructed from .og file using vg deconstruct  
-    - `PGGB/allbird_community.[0-9]/*final_bub_wave.vcf`: normalized and deconvoluted VCF file (run thru vcfwave and vcfbub). *Use this file for pop gen analysis!*  
+    - `PGGB/allbird_community.[0-9]/*.nameFix.vcf.gz`: varaiant call format file deconstructed from .og file using vg deconstruct. *Note: 'nameFix' version has the reference geneome ID as 'aphWoo1' to properly recolve haplotypes*  
+    - `PGGB/allbird_community.[0-9]/*final_nameFix_bub_wave.vcf`: normalized and deconvoluted VCF file (run thru vcfwave and vcfbub). *Use this file for pop gen analysis!*  
     - `PGGB/allbird_community.[0-9]/*bub_wave_A[W|I|C]_bialle.vcf`: normalized and deconvoluted VCF file of only biallelic SNPs, split by species
 - `PGGB/allbird_community.[0-9]_unplaced`: communities containing **unplaced reference scaffolds**  
     - Contains same files as above   
