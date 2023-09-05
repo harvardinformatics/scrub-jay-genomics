@@ -1,0 +1,80 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+library(tidyverse)
+rd<-read_tsv("ref_depth_100kb_windows.tsv", col_names=c("scaf", "start", "end", "depth"))
+comm<-read_tsv("COMMUNITIES_STATS.tsv", col_names = c("community", "hap", "len")) %>% 
+  mutate(community = str_remove(community, "chrom_communities/")) %>%
+  mutate(community = str_remove(community, ".fa.fai")) %>%
+  mutate(community = str_remove(community, "allbird_"))
+key<-read_csv("comm_key.csv")
+
+sj_ref <- comm %>% filter(hap == "AW_365336#REF") %>% select(community, reflen = len) %>% right_join(key)
+
+```   
+
+Make table of average non-ref length for each community.
+
+```{r}
+non_ref_len <- comm %>% filter(hap != "AW_365336#REF") %>% group_by(community) %>% summarize(len = mean(len))
+sj <- left_join(sj_ref, non_ref_len) %>% mutate(rel_len = len/reflen) %>%
+  mutate(chr = str_replace(scaf, ".+(ch\\S+)_RagTag.*", "\\1")) %>%
+  mutate(chr = str_replace(chr, fixed("AW_365336#REF#SUPER_W_RagTag.trimmed"), "W"))
+
+```
+
+First let's just look at this.
+
+```{r}
+
+ggplot(sj, aes(x=reflen, y=len)) + geom_point() + geom_abline(intercept=0, slope=1) + theme_classic() + 
+  labs(x="Reference Length", y="Mean Non-Ref Length") + 
+  geom_text(data=filter(sj, rel_len < 0.92), aes(x=reflen, y=len, label=chr), nudge_x=5e6, nudge_y=-1e6)
+
+```
+
+
+
+
+```{r}
+rd <- rd %>% mutate(cov_cat = case_when(
+  depth < 20 ~ "ultra_low",
+  depth >= 20 & depth < 70 ~ "low",
+  depth >= 70 & depth <= 200 ~ "normal",
+  depth >200 & depth <1000 ~ "high",
+  depth >= 1000 ~ "ultra_high",
+  .default = "missing"
+)) %>% mutate(cov_cat = factor(cov_cat, levels=c("ultra_low", "low", "normal", "high", "ultra_high", "missing")))
+
+gs<-rd %>% mutate(length = end-start) %>% pull(length) %>% sum()
+
+rd %>% ggplot(aes(x=cov_cat)) + geom_bar()
+
+```
+
+Now compare to fraction of chr with depth < 20.
+
+```{r}
+cov_scaf <- rd %>% mutate(low_depth = ifelse(depth<=20, "yes", "no")) %>% group_by(low_depth, scaf) %>% 
+  summarize(bp = sum(end-start)) %>% ungroup %>% right_join(sj) %>% 
+  pivot_wider(names_from=low_depth, values_from=bp, values_fill = 0) %>%
+  select(chr, scaf, community, reflen, len, rel_len, low_len = yes, norm_len = no) %>%
+  mutate(rel_low = low_len / (low_len+norm_len))
+
+ggplot(cov_scaf, aes(x=rel_len, y=rel_low)) + geom_point() + theme_classic() + 
+  labs(x="Community Length / Reference Length", y="Fraction Ultra Low Depth") + 
+  geom_text(data=filter(cov_scaf, rel_low > 0.03), aes(x=rel_len, y=rel_low, label=chr), nudge_x=-0.02)
+
+```
+
+Looking at depth for community 7, which seems to have a lot of the chr 1 stuff in it.
+
+```{r}
+
+c7 <- read_tsv("allbird_community.7.fa.1a21c5a.417fcdf.ce32324.smooth.final_graph_depth.1kb.tsv") %>% rename(scaf = `#path`)
+
+```
