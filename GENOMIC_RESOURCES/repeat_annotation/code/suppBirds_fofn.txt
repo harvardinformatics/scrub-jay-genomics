@@ -1,0 +1,3 @@
+/n/holylfs05/LABS/informatics/Lab/scrubjay/GENOMIC_RESOURCES/assemblies/haplotypes/results/hifiasm_assem/AI_1363_74537.p_ctg.fa
+/n/holylfs05/LABS/informatics/Lab/scrubjay/GENOMIC_RESOURCES/assemblies/haplotypes/results/hifiasm_assem/AC_1873_20930.p_ctg.fa
+/n/holylfs05/LABS/informatics/Lab/scrubjay/GENOMIC_RESOURCES/assemblies/haplotypes/results/hifiasm_assem/CY_8788.p_ctg.fa
