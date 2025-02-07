@@ -1,0 +1,117 @@
+import yaml
+import glob, os, pathlib
+
+#load sample sheet into dictionary where key=sample ID, value=file paths
+samsheet="/n/holylfs05/LABS/informatics/Everyone/scrubjay/scrub-jay-genomics/workflow/sample_sheet.txt"
+samdict = {}
+with open(samsheet) as fin:
+    for line in fin:
+        line = line.rstrip()
+        line = line.replace(",", " ")
+        data = line.split("\t")
+        #samdict[data[0]] = data[1]
+        samdict[data[0]] = {'reads' : data[2], 'HiC' : data[3]}
+
+#Change these variables:
+input_dir = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/raw_data"
+samples = ["AA_SRR23446543"]
+#samples = list(samdict.keys())
+haplotypes=["p_ctg", "hap1.p_ctg", "hap2.p_ctg"] 
+hifiasm_path = "/n/holylfs05/LABS/informatics/Everyone/scrubjay/hifiasm"
+hifi_outdir = "results/hifiasm_output_RAW"
+assem_outdir = "results/assemblies"
+
+
+def get_reads(wildcards):
+    files = samdict[wildcards.sample]['reads'].split(" ")
+    return files
+
+def get_hifi_params(wildcards):
+    if samdict[wildcards.sample]['HiC'] == "none":
+        return ["false", 'none', "none"]
+#        return hifi_outdir + "/" + wildcards.sample
+    else:
+        #first split samdict[wildcards.sample]['HiC'] on space into a list
+        hic_reads = samdict[wildcards.sample]['HiC'].split(" ")
+#        return hifi_outdir + "/" + wildcards.sample + " --h1 " + hic_reads[0] + "--h2 " + hic_reads[1]
+        return ["true", hic_reads[0], hic_reads[1]]
+        
+rule all:
+    input:
+        expand("results/assembly_qc/{sample}-{haplo}-quast/report.txt", haplo=haplotypes, sample=samples)
+
+rule merge:
+    input:
+        get_reads
+    output:
+        temp("{sample}_combined_reads.fastq.gz")
+    shell:
+        "cat {input} > {output}"
+
+rule adapterfilt:
+    input:
+        "{sample}_combined_reads.fastq.gz"
+    output:
+        temp(hifi_outdir + "/{sample}.filt.fastq.gz")
+    conda:
+        "envs/adapter.yaml"
+    shell:
+        "cutadapt --discard-trimmed --overlap=35 -b ATCTCTCTCAACAACAACAACGGAGGAGGAGGAAAAGAGAGAGAT -b ATCTCTCTCTTTTCCTCCTCCTCCGTTGTTGTTGTTGAGAGAGAT -o {output} {input}"
+
+rule hifi:
+    input:
+        hifi_outdir + "/{sample}.filt.fastq.gz"
+    output:
+        pasm = hifi_outdir + "/{sample}.p_ctg.gfa", #changed this to have single wildcard, will it work?
+        hap1asm = hifi_outdir + "/{sample}.hap1.p_ctg.gfa",
+        hap2asm = hifi_outdir + "/{sample}.hap2.p_ctg.gfa"
+    params:
+        hic = get_hifi_params,
+        outdir = hifi_outdir + "/{sample}"
+    threads: 8
+    shell:
+        """
+        if [[ "{params.hic[0]}" == "true" ]]; then
+            {hifiasm_path}/hifiasm -t {threads} --h1 {params.hic[1]} --h2 {params.hic[2]} -o {params.outdir} {input}
+            mv {params.outdir}.hic.p_ctg.gfa {output.pasm}
+            mv {params.outdir}.hic.hap1.p_ctg.gfa {output.hap1asm}
+            mv {params.outdir}.hic.hap2.p_ctg.gfa {output.hap2asm}
+        elif [[ "{params.hic[0]}" == "false" ]]; then
+            {hifiasm_path}/hifiasm -t {threads} -o {params.outdir} {input}
+            mv {params.outdir}.bp.p_ctg.gfa {output.pasm}
+            mv {params.outdir}.bp.hap1.p_ctg.gfa {output.hap1asm}
+            mv {params.outdir}.bp.hap2.p_ctg.gfa {output.hap2asm}
+        fi
+        """
+#        "{hifiasm_path}/hifiasm -t {threads} -o {params} {input}"
+
+rule gfa_to_fasta:
+    input:
+        hifi_outdir + "/{sample}.{haplo}.gfa"
+    output:
+        temp(hifi_outdir + "/{sample}.{haplo}.fa")
+    shell:
+        "awk '/^S/{{print \">\"$2;print $3}}' {input} > {output}"
+
+rule rename_contig:
+    input:
+        hifi_outdir + "/{sample}.{haplo}.fa"
+    output:
+        assem_outdir + "/{sample}.{haplo}.fa"
+    shell:
+        "awk -v sample={wildcards.sample} -v haplo={wildcards.haplo} 'BEGIN{{FS=\">\"; OFS=\"#\"}} /^>/{{if (haplo ~ /hap/) print \">\"sample,haplo,$2; else print \">\"sample,\"pri\",$2}} !/^>/{{print;}}' {input} > {output}"
+
+rule quast:
+    input:
+        assem_outdir + "/{sample}.{haplo}.fa"
+    params: #trying alternative way that's less hack-y
+        prefix="results/assembly_qc/{sample}-{haplo}-quast"
+    output:
+        "results/assembly_qc/{sample}-{haplo}-quast/report.txt"
+    conda:
+        "envs/quast.yaml"
+    threads: 4
+    log:
+        "logs/{sample}-{haplo}/quast_log/"
+    shell:
+        "quast.py -t {threads} --eukaryote -o {params.prefix} {input} &> {log}"
