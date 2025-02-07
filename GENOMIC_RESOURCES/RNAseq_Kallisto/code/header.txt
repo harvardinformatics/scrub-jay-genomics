@@ -1,0 +1,1 @@
+target_id	length	eff_length	est_counts	tpm	samp_id	tissue	spp	gene_id
