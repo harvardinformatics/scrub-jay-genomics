@@ -1,0 +1,408 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+New notebook to clean up pangene analysis of expression data
+
+Load libraries
+
+```{r}
+library(DESeq2)
+library(tidyverse)
+library(lme4)
+library(lmerTest)
+```
+Functions
+
+```{r}
+# Function to calculate tau
+calculate_tau <- function(counts) {
+  max_count <- max(counts, na.rm = TRUE)
+  if (max_count == 0) {
+    return(NA)  # Return NA if all counts are 0 to avoid division by 0
+  }
+  tau <- sum(1 - (counts / max_count), na.rm = TRUE) / (length(counts) - 1)
+  return(tau)
+}
+```
+
+Load data. This is complicated because the way pangene is run, we have one rna.id per gene_name, but the gene_name != gene_name from kallisto. The rna.id is one of the tgut or ggal depending on which mapped better. 
+
+However, this can mean that sometimes a gene duplication in the reference (e.g., an rna.id that maps to two xloc_id), is only represented by one pangene mapping. So, let's start by merging and doing some QC on the duplicates. 
+
+
+```{r}
+
+# read the gene info table into R, with the tcons/xloc/rna.id mapping
+
+gene_info<-read_delim("merged_TOGA_tgutRef_noDup.tsv", delim="\t", 
+             col_names = c("tcons_id", "xloc_id", "galGal_id", "tGut_id", "galGal_toga", "tGut_toga", "equiv_class", "gene_name"))
+
+# convert to something that can be merged with the pangene data 
+
+tcons_pg<-gene_info %>% select(xloc_id, tcons_id, galGal_id, tGut_id) %>% 
+  mutate(ggal = gsub("_gGal", "", galGal_id), tgut = gsub("_tGut","",  tGut_id)) %>%
+  select(tcons_id, xloc_id, ggal, tgut) %>%
+  pivot_longer(cols = ggal:tgut, names_to = "species", values_to = "rna_id")
+
+# pangene info, giving the RNA.id for each gene name in the pangene results table. Only need the XLOC_ID to map to RNA_ID, don't need TCONS_ID
+
+gene_pg_full <- read_delim("pangene_map.txt", delim=":", col_names = c("gene_name", "rna_id")) %>%
+  full_join(tcons_pg) %>% filter(!is.na(tcons_id), rna_id != "None", !is.na(gene_name)) 
+
+gene_pg <- gene_pg_full %>% 
+  select(xloc_id, gene_name, rna_id, species) %>% distinct()
+
+# chromosomal locations
+
+gene_loc <- read_delim("scrubjay_genes.tsv", delim = "\t",
+                     col_names = c("chr", "st", "en", "strand", "id_info")) %>%
+  mutate(id_info = str_remove_all(id_info, "\"")) %>%
+  separate_wider_delim(id_info, ";", names=c("tcons_id", "xloc_id")) %>%
+  mutate(tcons_id = str_remove(tcons_id, "transcript_id ")) %>%
+  mutate(xloc_id = str_remove(xloc_id, "gene_id ")) %>%
+  mutate(chrom = str_extract(str_remove(chr, "aphWoo1#REF#"), "ch\\d+")) %>%
+  select(xloc_id, chrom) %>% distinct()
+```
+Some QC on gene_pg, which is what we'll use to map the pangene table to the kallisto results, as it has both xloc and gene_name. 
+
+
+```{r}
+gene_pg %>% count(xloc_id) %>% count(num = n)
+```
+
+Okay, so there are a number of xloc_id that show up more than once. Let's look at a few.
+
+```{r}
+gene_pg %>% add_count(xloc_id) %>% filter(n == 2) %>% arrange(xloc_id)
+gene_pg %>% add_count(xloc_id) %>% filter(n > 3) %>% arrange(xloc_id)
+```
+These mostly look like cases where there are multiple rna_id that map to one XLOC, basically N:1 relationships (gGal:scrubjay). Let's also check to see if there are single genes that map to multiple XLOC_ID.
+
+```{r}
+gene_pg %>% add_count(gene_name) %>% count(n)
+
+```
+```{r}
+gene_pg %>% add_count(gene_name) %>% filter(n ==4) %>% arrange(gene_name)
+
+```
+
+So the cases where one gene_name maps to multiple xloc_ids are likely duplicates in the reference relative to tgut or ggal, e.g. 1:N (ggal:scrubjay), or perhaps split/bad annotations? These are almost all cases where there is some copy number variation, perhaps not surprisingly. 
+
+```{r}
+pangene_raw <- read_delim("sj-94nl-a2.pg.CNV.Rtable") %>% 
+  pivot_longer(-Gene, names_to = "indiv_haplo", values_to = "count") %>%
+  separate_wider_delim(indiv_haplo, delim="#", names=c("indiv", "haplo")) %>%
+  select(gene_name = Gene, indiv, count) %>% group_by(gene_name, indiv) %>%
+  summarize(count = sum(count))
+
+pangene <- gene_pg %>% add_count(xloc_id, name="xloc_n") %>% add_count(gene_name, name="gene_n") %>% right_join(pangene_raw, relationship = "many-to-many")
+```
+
+We seem some many-to-many joins, which are presumably arising from 1:n, n:1, and even n:n mappings. 
+
+First step is to make the pangene data have a single row per xloc_id. So if there is an xloc_id that shows up more than once, we collapse and keep the max count. This prevents duplication when we merge with expression data. 
+
+Before we do that, though, let's just double check the gene_name vs xloc_id counts. 
+
+```{r}
+pangene %>% select(gene_name, xloc_id, gene_n, xloc_n) %>% distinct() %>% count(gene_n, xloc_n)
+```
+
+Let's look at the ones that are 2:2
+
+```{r}
+pangene %>% filter(gene_n == 2, xloc_n == 2) %>% select(gene_name, xloc_id, gene_n, xloc_n) %>% distinct() %>% arrange(xloc_id, gene_name)
+pangene %>% filter(gene_name == "POLR1A" | gene_name == "PTCD3") %>% arrange(gene_name)
+pangene %>% filter(xloc_id == "XLOC_001196" | xloc_id == "XLOC_000835") %>% arrange(xloc_id)
+```
+Okay, so looking at one example, we have XLOC_001196 matching to PTCD3 and POLR1A; and also POLR1A matching to XLOC_000835 and XLOC_001196. 
+
+This is a bit complicated. 
+
+When one pangene gene_name maps to multiple XLOC_ID, it is fairly simple, we can just sum the counts across XLOC_ID. 
+
+However, when multiple pangene gene_names map to one XLOC, we need to do something else? The options are either to collapse them into a single xloc, or to split the expression, perhaps by rna_id? I'm not sure what causes this? Maybe we can recover some of these with the cd hit clustering? 
+
+Let's start by working with just the mapping table, without adding counts yet, and try to get a single expression value for each pangene gene_id. 
+
+
+```{r}
+exp_raw<-read_delim("kallisto_COMBINED_abundance.tsv", skip = 1, 
+                    col_names=c("tcons_id", "length", "eff_length", "est_counts", 
+                                "tpm", "sample", "tissue", "species", "geneID")) %>%
+  left_join(gene_info) %>%
+  select(xloc_id, tcons_id, tpm, tissue, indiv = sample)
+```
+
+This is fine, now we need to add the pangene information (gene_name), via the gene_pg and tcons_pg. For this we actually need the full verions of the gene_pg tibble.
+
+
+```{r}
+exp_raw %>% left_join(gene_pg_full, relationship="many-to-many")
+```
+
+Okay, actually, this is kind of a mess. I think if we have N (gene_name) : 1 (xloc), we can't really reasonably split expression, we just have no good way to do this because there is no id we can really track here. 
+
+The simplest thing is to just keep those, with expression duplicated, but mark them to see if our results are robust to filtering on these.
+
+So in that case, we collapse expression into a single TPM per xloc_id, merge to pangene_raw, and then merge with pangene_raw, and then collapse to one observation per gene_name / indiv / tissue for both count and tpm. We need to make some more mapping tables.
+
+```{r}
+pangene_mapping <- pangene %>% select(gene_name, xloc_id) %>% distinct()
+tpm_by_gene <- exp_raw %>% group_by(xloc_id, indiv, tissue) %>% summarize(tpm = sum(tpm)) %>%
+  full_join(pangene_mapping, relationship = "many-to-many") %>% left_join(gene_loc) %>%
+  mutate(chrom = replace_na(chrom, "non-aut"))
+```
+
+Make the final analysis dataset. This also includes the TPM > 1 filter and log transform.
+
+```{r}
+tpm_pg <- tpm_by_gene %>% filter(!is.na(gene_name)) %>% 
+  group_by(indiv, tissue, gene_name, chrom) %>% 
+  summarize(tpm = sum(tpm)) %>% left_join(pangene_raw) %>%
+  filter(!is.na(tpm), !is.na(count)) %>%
+  filter(tpm > 1) %>%
+  mutate(tpm = log10(tpm))
+```
+
+Finally, let's add pangene stats to each gene row, and also add the sex where we have it.
+
+
+```{r}
+ref_count <- pangene_raw %>% filter(indiv == "AW_365336") %>% select(gene_name, ref_count = count) %>% distinct()
+
+pangene_stats <- pangene_raw %>% 
+  distinct() %>% 
+  separate(indiv, into = c("species", NA), sep = "_", remove=FALSE, extra="merge") %>%
+  group_by(gene_name) %>%
+  summarize(min_count = min(count), 
+            max_count = max(count), 
+            AW_var = sum(species == "AW" & count != 2),
+            AC_var = sum(species == "AC" & count !=2)) %>%
+  left_join(ref_count) %>%
+  select(gene_name, ref_count, AW_var, AC_var, min_count, max_count) %>% distinct()
+```
+```{r}
+sex<-read_delim("indiv_sex.tsv", trim_ws = TRUE)
+```
+
+
+```{r}
+tpm_pg <- tpm_pg %>% left_join(pangene_stats) %>% left_join(sex)
+
+```
+
+
+```{r}
+for (tissue_type in c("br", "e", "g", "h", "l", "bl")) {
+  plot <- tpm_pg %>% filter(tissue==tissue_type, !is.na(chrom)) %>% 
+    ggplot(aes(x=tpm, color=indiv)) + geom_freqpoly(bins=50) + ggtitle(tissue_type)
+  print(plot)
+}
+```
+
+Reference expression by variation outside reference.
+
+```{r}
+
+print("==== TISSUE: L ====")
+
+tpm_pg %>% filter(indiv=="AW_365336", count == 2, chrom!="non-aut", tissue == "l") %>% select(gene_name, AW_var, tpm) %>% 
+  lm(tpm ~ AW_var, data = .) %>% summary()
+
+tpm_pg %>% filter(indiv=="AW_365336", count == 2, chrom!="non-aut", tissue == "l") %>% select(gene_name, AW_var, tpm) %>% 
+  mutate(cnv = ifelse(AW_var > 1, "yes", "no")) %>% 
+  t.test(tpm ~ cnv, conf.int = TRUE, data = .)
+
+
+print("==== TISSUE:E ====")
+
+tpm_pg %>% filter(indiv=="AW_365336", count == 2, chrom!="non-aut", tissue == "e") %>% select(gene_name, AW_var, tpm) %>% 
+  lm(tpm ~ AW_var, data = .) %>% summary()
+
+tpm_pg %>% filter(indiv=="AW_365336", count == 2, chrom!="non-aut", tissue == "e") %>% select(gene_name, AW_var, tpm) %>% 
+  mutate(cnv = ifelse(AW_var > 1, "yes", "no")) %>% 
+  t.test(tpm ~ cnv, conf.int = TRUE, data = .)
+
+```
+
+```{r}
+tpm_pg %>% filter(indiv=="AW_365336", count == 2, chrom!="non-aut", tissue == "l") %>% select(gene_name, AW_var, tpm) %>% 
+  group_by(gene_name, AW_var) %>%
+  summarize(median_tpm = median(tpm, na.rm=TRUE)) %>% 
+  mutate(AW_var = ifelse(AW_var > 5, "6+", as.character(AW_var))) %>%
+  ggplot(aes(x=factor(AW_var, levels=c("0", "1", "2", "3", "4", "5", "6+")), y=median_tpm)) + geom_boxplot(outliers=FALSE, notch=TRUE) + theme_minimal() +
+  labs(x = "Number of non-ref AW individuals", y = "Median log10(TPM) in Tissue: l")
+```
+
+```{r}
+tpm_pg %>% filter(indiv=="AW_365336", count == 2, chrom!="non-aut", tissue == "e") %>% select(gene_name, AW_var, tpm) %>% 
+  group_by(gene_name, AW_var) %>%
+  summarize(median_tpm = median(tpm, na.rm=TRUE)) %>% 
+  mutate(AW_var = ifelse(AW_var > 5, "6+", as.character(AW_var))) %>%
+  ggplot(aes(x=factor(AW_var, levels=c("0", "1", "2", "3", "4", "5", "6+")), y=median_tpm)) + geom_boxplot(outliers=FALSE, notch=TRUE) + theme_minimal() +
+  labs(x = "Number of non-ref AW individuals", y = "Median log10(TPM) in Tissue: e")
+
+```
+
+Now, let's look at expression variation by count. 
+
+
+```{r}
+tpm_pg %>% filter(chrom != "non-aut", tissue == "l", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm, sex) %>%
+  ggplot(aes(x=as.factor(count), y=tpm, fill = sex)) + geom_boxplot(outliers=FALSE) + ggtitle("Tissue: e")
+
+tpm_pg %>% filter(chrom != "non-aut", tissue == "l", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm, sex) %>% distinct() %>% lmer(tpm ~ count + sex + (1|gene_name), data=.) %>% summary()
+
+```
+
+```{r}
+tpm_pg %>% filter(chrom != "non-aut", tissue == "l", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm, sex) %>%
+  ggplot(aes(x=as.factor(count), y=tpm)) + geom_boxplot(outliers=FALSE) + ggtitle("Tissue: e")
+
+tpm_pg %>% filter(chrom != "non-aut", tissue == "l", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm) %>% distinct() %>% lmer(tpm ~ count + (1|gene_name), data=.) %>% summary()
+```
+
+
+
+
+```{r}
+tpm_pg %>% filter(chrom != "non-aut", tissue == "e", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm, sex) %>%
+  ggplot(aes(x=as.factor(count), y=tpm, fill = sex)) + geom_boxplot(outliers=FALSE) + ggtitle("Tissue: e")
+
+tpm_pg %>% filter(chrom != "non-aut", tissue == "e", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm, sex) %>% distinct() %>% lmer(tpm ~ count + sex + (1|gene_name), data=.) %>% summary()
+
+```
+
+```{r}
+tpm_pg %>% filter(chrom != "non-aut", tissue == "e", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm, sex) %>%
+  ggplot(aes(x=as.factor(count), y=tpm)) + geom_boxplot(outliers=FALSE) + ggtitle("Tissue: e")
+
+tpm_pg %>% filter(chrom != "non-aut", tissue == "e", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm) %>% distinct() %>% lmer(tpm ~ count + (1|gene_name), data=.) %>% summary()
+```
+
+
+
+
+```{r}
+tpm_pg %>% filter(chrom != "non-aut", tissue == "h", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm, sex) %>%
+  ggplot(aes(x=as.factor(count), y=tpm, fill = sex)) + geom_boxplot(outliers=FALSE) + ggtitle("Tissue: e")
+
+tpm_pg %>% filter(chrom != "non-aut", tissue == "h", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm, sex) %>% distinct() %>% lmer(tpm ~ count + sex + (1|gene_name), data=.) %>% summary()
+
+```
+
+```{r}
+tpm_pg %>% filter(chrom != "non-aut", tissue == "h", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm, sex) %>%
+  ggplot(aes(x=as.factor(count), y=tpm)) + geom_boxplot(outliers=FALSE) + ggtitle("Tissue: e")
+
+tpm_pg %>% filter(chrom != "non-aut", tissue == "h", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm) %>% distinct() %>% lmer(tpm ~ count + (1|gene_name), data=.) %>% summary()
+```
+
+
+
+```{r}
+tpm_pg %>% filter(chrom != "non-aut", tissue == "br", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm, sex) %>%
+  ggplot(aes(x=as.factor(count), y=tpm, fill = sex)) + geom_boxplot(outliers=FALSE) + ggtitle("Tissue: e")
+
+tpm_pg %>% filter(chrom != "non-aut", tissue == "br", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm, sex) %>% distinct() %>% lmer(tpm ~ count + sex + (1|gene_name), data=.) %>% summary()
+
+```
+
+```{r}
+tpm_pg %>% filter(chrom != "non-aut", tissue == "br", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm, sex) %>%
+  ggplot(aes(x=as.factor(count), y=tpm)) + geom_boxplot(outliers=FALSE) + ggtitle("Tissue: e")
+
+tpm_pg %>% filter(chrom != "non-aut", tissue == "br", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm) %>% distinct() %>% lmer(tpm ~ count + (1|gene_name), data=.) %>% summary()
+```
+
+
+
+```{r}
+tpm_pg %>% filter(chrom != "non-aut", tissue == "e", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm, sex) %>%
+  ggplot(aes(x=as.factor(count), y=tpm, fill = sex)) + geom_boxplot(outliers=FALSE) + ggtitle("Tissue: e")
+
+tpm_pg %>% filter(chrom != "non-aut", tissue == "e", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm, sex) %>% distinct() %>% lmer(tpm ~ count + sex + (1|gene_name), data=.) %>% summary()
+
+```
+
+```{r}
+tpm_pg %>% filter(chrom != "non-aut", tissue == "e", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm, sex) %>%
+  ggplot(aes(x=as.factor(count), y=tpm)) + geom_boxplot(outliers=FALSE) + ggtitle("Tissue: e")
+
+tpm_pg %>% filter(chrom != "non-aut", tissue == "e", ref_count > 0, AW_var > 0) %>% 
+  select(gene_name, indiv, count, tpm, sex) %>% distinct() %>% lmer(tpm ~ count + (1|gene_name), data=.) %>% summary()
+
+```
+
+
+
+```{r}
+tpm_pg %>% filter(chrom != "non-aut", tissue == "g", ref_count > 0, AW_var > 0, sex=="female") %>% 
+  select(gene_name, indiv, count, tpm, sex) %>%
+  ggplot(aes(x=as.factor(count), y=tpm)) + geom_boxplot(outliers=FALSE) + ggtitle("Tissue: g, female")
+
+tpm_pg %>% filter(chrom != "non-aut", tissue == "g", ref_count > 0, AW_var > 0, sex=="male") %>% 
+  select(gene_name, indiv, count, tpm) %>% distinct() %>% lmer(tpm ~ count + (1|gene_name), data=.) %>% summary()
+```
+
+
+
+```{r}
+tpm_pg %>% filter(chrom != "non-aut", tissue == "g", ref_count > 0, AW_var > 0, sex=="male") %>% 
+  select(gene_name, indiv, count, tpm, sex) %>%
+  ggplot(aes(x=as.factor(count), y=tpm)) + geom_boxplot(outliers=FALSE) + ggtitle("Tissue: g, male")
+
+tpm_pg %>% filter(chrom != "non-aut", tissue == "g", ref_count > 0, AW_var > 0, sex=="male") %>% 
+  select(gene_name, indiv, count, tpm) %>% distinct() %>% lmer(tpm ~ count + (1|gene_name), data=.) %>% summary()
+```
+
+
+
+```{r}
+tpm_pg %>% filter(chrom != "non-aut", tissue == "bl", ref_count > 0, AC_var > 0) %>% 
+  select(gene_name, indiv, count, tpm, sex) %>%
+  ggplot(aes(x=as.factor(count), y=tpm)) + geom_boxplot(outliers=FALSE) + ggtitle("Tissue: e")
+
+tpm_pg %>% filter(chrom != "non-aut", tissue == "bl", ref_count > 0, AC_var > 0) %>% 
+  select(gene_name, indiv, count, tpm) %>% distinct() %>% lmer(tpm ~ count + (1|gene_name), data=.) %>% summary()
+```
+
+All AW tissues together
+
+```{r}
+tpm_pg %>% filter(chrom != "non-aut", AW_var > 0, str_detect(indiv, "AW_")) %>% 
+  select(gene_name, indiv, count, tpm, tissue, sex) %>% ungroup() %>%
+  mutate(tissue = ifelse(tissue == "g" & sex == "female", "g.f", tissue)) %>%
+  mutate(tissue = replace(tissue, tissue=="g", "g.m")) %>% 
+  ggplot(aes(x=as.factor(count), y=tpm, fill=tissue)) + geom_boxplot(outliers=FALSE) + ggtitle("Tissue: all") + theme_minimal() + xlab("Copy Number") + ylab("TPM (log10)")
+
+tpm_pg %>% filter(chrom != "non-aut", AW_var > 0, str_detect(indiv, "AW_")) %>% 
+  select(gene_name, indiv, count, tpm, tissue, sex) %>% ungroup() %>%
+  mutate(tissue = ifelse(tissue == "g" & sex == "female", "g.f", tissue)) %>%
+  mutate(tissue = replace(tissue, tissue=="g", "g.m")) %>% 
+  lmer(tpm ~ count + (1|gene_name) + (1|tissue), data=.) %>% summary()
+```
+

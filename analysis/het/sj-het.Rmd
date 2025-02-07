@@ -1,0 +1,32 @@
+---
+title: "Scrub Jay Heterozygosity"
+output: html_notebook
+---
+
+Setup
+
+```{r}
+library(tidyverse)
+library(janitor)
+het<-read_table("indiv_heterozygosity_by_community_with_priass_weighted_het.txt") %>% 
+  clean_names() %>%
+  select(indiv, community_1) %>%
+  separate(indiv, c("species", "sample_id"), extra="merge")
+ss<-read_csv("../../scrubjay-samples.csv") %>% 
+  clean_names() %>% select(species, sample_id, sex) %>% 
+  mutate(sex = replace(sex, sex == "M", "male")) %>%
+  mutate(sex = replace(sex, sex == "F", "female")) %>%
+  mutate(sex = replace(sex, sex == "?", NA)) %>%
+  mutate(sample_id = str_remove(sample_id, "MCZ_Orn_")) %>%
+  mutate(sample_id = str_remove(sample_id, "MCZ_Cryo_"))
+
+het <- left_join(het, ss, by=c("sample_id"))
+```
+
+
+```{r}
+
+het %>% ggplot(aes(y=community_1,x=species.x,color=sex)) + geom_point(alpha=0.5,size=2,position=position_jitter(width=0.2,height=0))
+
+```
+
