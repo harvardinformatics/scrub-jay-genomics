@@ -1,3 +1,8 @@
+# Ignore out and err files
+*.err
+*.out
+*.vcf
+
 #Don't track results files, which are big
 results/
 
