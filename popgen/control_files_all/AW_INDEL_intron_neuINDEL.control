@@ -1,0 +1,44 @@
+[algorithm_commands]
+search_algorithm: NLOPT_LD_SLSQP
+maxeval: 100000
+maxtime: 3600
+num_searches: 50
+nnoimp: 1
+maximp: 3
+optional: true
+size: 10000
+key: 3
+epsabs: 1e-20
+epsrel: 1e-09
+rftol: 1e-09
+init: random
+
+[model_commands]
+model: neutralINDEL_vs_selectedINDEL
+n: 28
+r_range: 0.01, 100
+neu_indel_m: 69876473
+neu_ins_sfs: 78245, 27039, 15643, 10475, 8246, 6614, 5532, 4790, 4393, 3944, 3728, 3705, 3459, 3351, 3227, 3244, 3148, 3248, 3199, 3247, 3298, 3585, 3973, 4700, 5724, 10099, 31115
+neu_del_sfs: 159055, 61290, 35045, 23736, 17627, 13703, 11352, 9558, 8339, 7317, 6657, 6174, 5647, 5086, 4838, 4525, 4304, 4153, 4055, 3653, 3879, 3917, 4106, 4404, 5101, 8308, 23366
+neu_ins_theta_range: 1e-12, 0.1
+neu_ins_e_range: 0.0, 0.5
+neu_del_theta_range: 1e-12, 0.1
+neu_del_e_range: 0.0, 0.5
+sel_indel_m: 45192014
+sel_ins_sfs: 82779, 30713, 17442, 11929, 9280, 7456, 6331, 5659, 5084, 4589, 4239, 4051, 3940, 3794, 3665, 3645, 3530, 3437, 3502, 3505, 3848, 3974, 4491, 4934, 5915, 10001, 31619
+sel_del_sfs: 165520, 64619, 36549, 24769, 18601, 14761, 12197, 10476, 8936, 7926, 7096, 6485, 6074, 5482, 5194, 4957, 4656, 4480, 4107, 4149, 4237, 4192, 4490, 4675, 5423, 8142, 24062
+dfe: continuous
+distribution: reflected_gamma
+ins_theta_range: 1e-12, 0.1
+ins_shape_range: 0.001, 200
+ins_scale_range: 0.1, 5000.0
+ins_e_range: 0.0, 0.5
+del_theta_range: 1e-12, 0.1
+del_shape_range: 0.001, 200
+del_scale_range: 0.1, 5000.0
+del_e_range: 0.0, 0.5
+constraint: equal_mutation_rate
+optional: true
+fraction: 0.005
+delta: 1e-05
+degree: 500
