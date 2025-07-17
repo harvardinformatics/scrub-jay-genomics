@@ -11,4 +11,5 @@
 TGUT="scrubjay_tGut_regID.gtf"
 GGAL="scrubjay_gGal_regID.gtf"
 
-/n/holylfs05/LABS/informatics/Users/dkhost/gffcompare-0.12.6.Linux_x86_64/gffcompare -D -o merged_TOGA_noRef_noDup $TGUT $GGAL
+/n/holylfs05/LABS/informatics/Users/dkhost/gffcompare-0.12.6.Linux_x86_64/gffcompare -o merged_TOGA_noDup -D -r $TGUT $GGAL
+
