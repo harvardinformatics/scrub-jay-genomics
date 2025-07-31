@@ -3,6 +3,7 @@ We projected the PGGB graph into a VCF on the reference coordinates for analysis
 We also generated PAF files of each haplotype assembly mapped to the reference using minimap, see `minimap` subdirectory.
 
 We also used SyRI to anaylze inversions: `SyRi_inversions.sh`
+Code to analyze pangene results is: `pangene_analysis_clean_final.R`
 
 ## VCF Generation
 
