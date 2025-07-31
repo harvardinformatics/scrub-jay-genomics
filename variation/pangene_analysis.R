@@ -46,6 +46,10 @@ pangeneauto$sumAW<-rowSums(pangeneauto[,grep("AW_",colnames(pangeneauto))])
 #create indexes of whether a gene is reliably polymorphic (> 2 haplotypes varying) in each species
 #this filter works only for deletions of genes with '1 0' polymorphisms, which is most genes
 
+AIcols<-grep("AI_1",colnames(pangeneauto))
+AWcols<-grep("AW_3",colnames(pangeneauto))
+ACcols<-grep("AC_1",colnames(pangeneauto))
+
 for(i in 1:dim(pangeneauto)[1]){
   pangeneauto[i,'polyAI']<-ifelse(max(table(t(pangeneauto[i,AIcols]))) >= 29,FALSE,TRUE)
   pangeneauto[i,'polyAC']<-ifelse(max(table(t(pangeneauto[i,ACcols]))) >= 27,FALSE,TRUE)
@@ -54,24 +58,21 @@ for(i in 1:dim(pangeneauto)[1]){
 
 #make filter to flag genes with only 1/0 polymorphisms
 pred<-in_set(1,0)
-AIcols<-grep("AI_1",colnames(pangeneauto))
-AWcols<-grep("AW_3",colnames(pangeneauto))
-ACcols<-grep("AC_1",colnames(pangeneauto))
-
+i<-2
 for(i in 1:dim(pangeneauto)[1]){
 x<-as.data.frame(t(pangeneauto[i,ACcols]))
 colnames(x)<-"counts"
-pangeneauto[i,'AC_0_1']<-ifelse(all(pred(x$counts)),TRUE,FALSE)
+pangeneauto[i,'AC_0_1']<-ifelse((all(pred(x$counts)) & pangeneauto[i,'num_copy_num_states_AC'] > 1),TRUE,FALSE)
 }
 for(i in 1:dim(pangeneauto)[1]){
   x<-as.data.frame(t(pangeneauto[i,AIcols]))
   colnames(x)<-"counts"
-  pangeneauto[i,'AI_0_1']<-ifelse(all(pred(x$counts)),TRUE,FALSE)
+  pangeneauto[i,'AI_0_1']<-ifelse((all(pred(x$counts)) & pangeneauto[i,'num_copy_num_states_AI'] > 1),TRUE,FALSE)
 }
 for(i in 1:dim(pangeneauto)[1]){
   x<-as.data.frame(t(pangeneauto[i,AWcols]))
   colnames(x)<-"counts"
-  pangeneauto[i,'AW_0_1']<-ifelse(all(pred(x$counts)),TRUE,FALSE)
+  pangeneauto[i,'AW_0_1']<-ifelse((all(pred(x$counts)) & pangeneauto[i,'num_copy_num_states_AW'] > 1),TRUE,FALSE)
 }
 
 #add number of states of each gene for each species
@@ -87,9 +88,14 @@ for(i in 1:dim(pangeneauto)[1]){
   pangeneauto$num_sp_poly_poly[i]<-length(which(pangeneauto[i,grep("polyA",colnames(pangeneauto))] == TRUE))
 }
 
+setwd("/Users/scott/Library/CloudStorage/OneDrive-HarvardUniversity/Research/Scrub\ Jays/pangene/")
+write.table(pangeneauto,"/Users/scott/Library/CloudStorage/OneDrive-HarvardUniversity/Research/Scrub\ Jays/pangene/Pangeneauto_table_final_poly_stats.txt",sep = "\t",col.names = T,row.names = F,quote = F)
+write.table(pangeneauto[,-c(2:95)],"/Users/scott/Library/CloudStorage/OneDrive-HarvardUniversity/Research/Scrub\ Jays/pangene/Pangeneauto_no_haps_poly_stats_final_table.txt",sep = "\t",col.names = T,row.names = F,quote = F)
+
 #begin calculation of CNV numbers with different filters
 #make table longer, pivoting gene counts per haplotype
 pangenepoly3<-pangeneauto %>% pivot_longer(c(2:95),names_to = "haplotype",values_to = "copy_num")
+
 
 #add species designations
 pangenepoly3$species<-str_before_first(pangenepoly3$haplotype,"_")
@@ -140,18 +146,40 @@ tab<-pangenepoly3 %>% filter(species == "AI" & (sumAI <= 24 | sumAI >= 36)) %>% 
 table(tab$num_copy_num_states_AI)
 sum(table(tab$num_copy_num_states_AI))
 
-#count multiplications - definition - more than total number of haplotypes in a species
-pangeneauto %>% filter(species == "AW" & sumAW > 30) %>% ungroup() %>% summarize(count = n_distinct(Gene))
-pangeneauto %>% filter(species == "AC" & sumAC > 28) %>% ungroup() %>% summarize(count = n_distinct(Gene))
-pangeneauto %>% filter(species == "AI" & sumAI > 30) %>% ungroup() %>% summarize(count = n_distinct(Gene))
+#number of genes with biallelic 0/1 PAV polymorphisms
+pangeneauto %>% reframe(sumAI10 = sum(AI_0_1))
+pangeneauto %>% reframe(sumAW10 = sum(AW_0_1))
+pangeneauto %>% reframe(sumAC10 = sum(AC_0_1))
 
+#calculate above in a different way to check
+pangenepoly3 %>% filter(species == "AW" & AW_0_1 == TRUE) %>% ungroup() %>% summarize(count = n_distinct(Gene))
+pangenepoly3 %>% filter(species == "AI" & AI_0_1 == TRUE) %>% ungroup() %>% summarize(count = n_distinct(Gene))
+pangenepoly3 %>% filter(species == "AC" & AC_0_1 == TRUE) %>% ungroup() %>% summarize(count = n_distinct(Gene))
+
+#above filter with frequency of at least two haplotypes
+pangenepoly3 %>% filter(species == "AI" & AI_0_1 == TRUE & polyAI == TRUE) %>% ungroup() %>% summarize(count = n_distinct(Gene))
+pangenepoly3 %>% filter(species == "AW" & AW_0_1 == TRUE & polyAW == TRUE) %>% ungroup() %>% summarize(count = n_distinct(Gene))
+pangenepoly3 %>% filter(species == "AC" & AC_0_1 == TRUE & polyAC == TRUE) %>% ungroup() %>% summarize(count = n_distinct(Gene))
+
+#above filter with frequency of at least six haplotypes
+pangenepoly3 %>% filter(species == "AI" & AI_0_1 == TRUE & sumAI < 25) %>% ungroup() %>% summarize(count = n_distinct(Gene))
+pangenepoly3 %>% filter(species == "AW" & AW_0_1 == TRUE & sumAW < 25) %>% ungroup() %>% summarize(count = n_distinct(Gene))
+pangenepoly3 %>% filter(species == "AC" & AC_0_1 == TRUE & sumAC < 23) %>% ungroup() %>% summarize(count = n_distinct(Gene))
+
+#count multiplications - definition - more than total number of haplotypes in a species
+pangenepoly3 %>% filter(species == "AI" & sumAI > 30) %>% ungroup() %>% summarize(count = n_distinct(Gene))
+pangenepoly3 %>% filter(species == "AW" & sumAW > 30) %>% ungroup() %>% summarize(count = n_distinct(Gene))
+pangenepoly3 %>% filter(species == "AC" & sumAC > 28) %>% ungroup() %>% summarize(count = n_distinct(Gene))
+
+#above filter with frequency of at least two haplotypes
+pangenepoly3 %>% filter(species == "AI" & polyAI == 1 & sumAI > 30) %>% ungroup() %>% summarize(count = n_distinct(Gene))
 pangenepoly3 %>% filter(species == "AW" & polyAW == 1 & sumAW > 30) %>% ungroup() %>% summarize(count = n_distinct(Gene))
 pangenepoly3 %>% filter(species == "AC" & polyAC == 1 & sumAC > 28) %>% ungroup() %>% summarize(count = n_distinct(Gene))
-pangenepoly3 %>% filter(species == "AI" & polyAI == 1 & sumAI > 30) %>% ungroup() %>% summarize(count = n_distinct(Gene))
 
+#above filter with frequency of at least six haplotypes
+pangenepoly3 %>% filter(species == "AI" & sumAI > 35) %>% ungroup() %>% summarize(count = n_distinct(Gene))
 pangenepoly3 %>% filter(species == "AW" & sumAW > 35) %>% ungroup() %>% summarize(count = n_distinct(Gene))
 pangenepoly3 %>% filter(species == "AC" & sumAC > 33) %>% ungroup() %>% summarize(count = n_distinct(Gene))
-pangenepoly3 %>% filter(species == "AI" & sumAI > 35) %>% ungroup() %>% summarize(count = n_distinct(Gene))
 
 #now count number of genes with 0/0 genotypes
 #add individual identities and copy numbers per individual
@@ -159,6 +187,10 @@ pangenepoly3<-pangenepoly3 %>% mutate(indiv = str_before_last_dot(haplotype),sum
 pangenepoly3<-pangenepoly3 %>% group_by(Gene,indiv) %>% mutate(copy_num1 = copy_num[1],copy_num2 = copy_num[2],sum_indiv=sum(copy_num1,copy_num2)/2) #%>% distinct()
 subsetAphHW<-pangenepoly3 %>% ungroup() %>%
   group_by(Gene,indiv) %>% dplyr::reframe(sum_indiv=sum_indiv,species=species,copy_num1 = copy_num[1],copy_num2 = copy_num[2]) %>% distinct()
+
+#table of genes deleted entirely in each species
+totdeltab<-genesumtab %>% filter(species %in% c("AW","AC","AI") & genoBBonly > 0)
+write.table(totdeltab,"table_genes_all_00_homozygote_deletions.txt",sep = "\t",col.names = T,row.names = F,quote = F)
 
 #Sum CNV genotypes of all genes regardless of copy number per haplotype
 #considers copy numbers >= 1 per haplotype as allele "A"; all others allele B
@@ -211,7 +243,8 @@ genesumtab<-subsetAphHW %>% group_by(Gene,species) %>% reframe(sumAA=sum(genoAA,
   ))
 
 #final summary of CNV genotypes, adding genes across categories as checks
-genesumtab2<-genesumtab %>% filter(species %in% c("AW","AC","AI")) %>%
+
+genesumtab %>% filter(species %in% c("AW","AC","AI")) %>%
   group_by(species) %>% reframe(AAonly = sum(genoAAonly,na.rm = T),
                                 ABonly = sum(genoABonly,na.rm = T),
                                 BBonly = sum(genoBBonly, na.rm = T),
@@ -219,16 +252,7 @@ genesumtab2<-genesumtab %>% filter(species %in% c("AW","AC","AI")) %>%
                                 BB_pres = sum(genoBBonly,gAA_BB,gAB_BB,gAA_AB_BB,na.rm = T),
                                 sum_all_genes=sum(c(genoAAonly,genoABonly,genoBBonly,gAA_AB,gAA_BB,gAB_BB,gAA_AB_BB),na.rm = T))
 
-write.table(genesumtab2,"summary_pangene_table_PAV_acros_species_polyA_2_min_filter.txt",sep = "\t",col.names = T,row.names = F,quote = F)
-
-#table of genes deleted entirely in each species
-totdeltab<-genesumtab %>% filter(species %in% c("AW","AC","AI") & genoBBonly > 0)
-
-setwd("/Users/scott/Library/CloudStorage/OneDrive-HarvardUniversity/Research/Scrub\ Jays/pangene")
-write.table(totdeltab,"table_genes_all_00_homozygote_deletions.txt",sep = "\t",col.names = T,row.names = F,quote = F)
-
-#now calculate for PAVs in 2 or more haplotypes
-
+#now summarize PAVs in 2 or more haplotypes
 genesumtab %>% filter(sumAB > 1 | sumBB > 1) %>%
   filter(species %in% c("AW","AC","AI")) %>%
   group_by(species) %>% reframe(AAonly = sum(genoAAonly,na.rm = T),
@@ -239,7 +263,7 @@ genesumtab %>% filter(sumAB > 1 | sumBB > 1) %>%
                                 sum_all_genes=sum(c(genoAAonly,genoABonly,genoBBonly,gAA_AB,gAA_BB,gAB_BB,gAA_AB_BB),na.rm = T))
 
 
-#then calculate for PAVs in 6 or more haplotypes
+#now summarize PAVs in 6 or more haplotypes
 genesumtab %>% filter(sumAB > 5 | sumBB > 5) %>%
   filter(species %in% c("AW","AC","AI")) %>%
   group_by(species) %>% reframe(AAonly = sum(genoAAonly,na.rm = T),
@@ -250,3 +274,14 @@ genesumtab %>% filter(sumAB > 5 | sumBB > 5) %>%
                                 sum_all_genes=sum(c(genoAAonly,genoABonly,genoBBonly,gAA_AB,gAA_BB,gAB_BB,gAA_AB_BB),na.rm = T))
 
 
+#total number of genotypes per species homozygous for deletion (0/0)
+genesumtab %>% filter(species %in% c("AW","AC","AI")) %>% group_by(species) %>%
+  reframe(totBB = sum(sumBB))
+
+#with polyA* filter
+genesumtab %>% filter(species %in% c("AW","AC","AI") & sumAB > 1 | sumBB > 1) %>% group_by(species) %>%
+  reframe(totBB = sum(sumBB))
+
+#now summarize PAVs in 6 or more haplotypes
+genesumtab %>% filter(species %in% c("AW","AC","AI") & sumAB > 5 | sumBB > 5) %>% group_by(species) %>%
+  reframe(totBB = sum(sumBB))
