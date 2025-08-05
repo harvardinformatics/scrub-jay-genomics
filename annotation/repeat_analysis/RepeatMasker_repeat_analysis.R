@@ -7,11 +7,8 @@ library(RColorBrewer)
 #code used for making supplementary table S4 and associated repeat plots
 #start with concatenation of RepeatMasker output bedfiles, placed on Dryad
 
-#script used to prepare final repmask files for Zenodo July 2025
-setwd("/n/netscratch/edwards_lab/Lab/sedwards/scrubjay/repmask/repmask_hap_nornd_bedfiles")
-library(strex)
-library(dplyr)
-library(tidyverse)
+#script used to prepare final repmask files for Zenodo
+#go to directory with *.bed files contained in all_haps_repmask_nornd_cat_CS_CY.bed.gz
 length(dir(pattern = "out.bed"))
 for(i in 1:length(dir(pattern = "out.bed"))){
   x<-read.table(dir(pattern = "out.bed")[i],sep = "\t",comment.char = "@",fill = TRUE,row.names=NULL)
@@ -24,22 +21,20 @@ for(i in 1:length(dir(pattern = "out.bed"))){
 }
 
 #read in file again and pare down for storage and analysis
-reps<-read.table("all_haps_repmask_nornd_with_CS_CY_SJ.bed",sep = "\t",comment.char = "@")
+reps<-read.table("all_haps_repmask_nornd_cat_CS_CY.bed",sep = "\t",comment.char = "@")
 colnames(reps)<-c("contig","start","end","rep_type","repeat_type","hap","species")
 reps2<-reps %>% mutate(replen=end-start) %>% group_by(hap,repeat_type) %>% reframe(hap=hap,repeat_type=repeat_type,totreplen=sum(replen),species=species) %>% distinct()
-write.table(reps2,"all_haps_repmask_nornd_sums.bed",sep = "\t",col.names = T,row.names = F,quote = F)
+write.table(reps2,"all_haps_repmask_nornd_sums.txt",sep = "\t",col.names = T,row.names = F,quote = F)
 
 #the file all_haps_repmask_nornd_sums.bed was then gzipped and uploaded to Dryad as all_haps_repmask_nornd_sums.bed.gz
 
 #summarize concatenated RepeatMasker bedfile into individual haplotypes
   
-samp2<-read.table("/Users/scott/Library/CloudStorage/OneDrive-HarvardUniversity/Research/Scrub\ Jays/RepMask/repmask_all_sj/repmask_all_haps_nornd/all_haps_repmask_nornd_sums_July_2025.bed",sep = "\t",comment.char = "@",header = T)
+samp2<-read.table("all_haps_repmask_nornd_sums.bed",sep = "\t",comment.char = "@",header = T)
 #need to input major repeat types
 
 #tidy up a bit and get order of listing of all repeat sub-types
-unique(samp2$hap)
-head(samp2)
-tail(samp2)
+
 samp2$hap[which(samp2$hap == "AA_SRR23446543#hap1.p_ctg")]<-"AA_SRR23446543#hap1"
 samp2$hap[which(samp2$hap == "AA_SRR23446543#hap2.p_ctg")]<-"AA_SRR23446543#hap2"
 samp2$maj_rep_type<-NA
@@ -68,7 +63,7 @@ reptab %>% ggplot(aes(x=hap,y=sumrep/1e6,fill=maj_rep_type)) + geom_bar(stat="id
 samp2$indiv<-str_before_first(samp2$hap,"#")
 
 #input lengths of each haplotype assembly
-haps<-read.table("/Users/scott/Library/CloudStorage/OneDrive-HarvardUniversity/Research/Scrub\ Jays/assemblies/danielle_assembly_stats/ASSEMBLY_STATS.tsv",header = T)
+haps<-read.table("ASSEMBLY_STATS.tsv",header = T)
 i<-1
 haps2<-haps %>% select(c(1,7,10)) %>% pivot_longer(c(2,3),names_to = "haplotype",values_to = "haplen")
 haps2$hapname<-gsub(".Tot_len","",paste(haps2$Sample,haps2$haplotype,sep="#"))
@@ -86,7 +81,7 @@ for(i in 1:dim(haps2)[1]){
   samp2$hap_assem_len[matchnum]<-haps2$haplen[i]
 }
 
-write.table(samp2,"/Users/scott/Library/CloudStorage/OneDrive-HarvardUniversity/Research/Scrub Jays/RepMask/repmask_all_sj/repmask_all_haps_nornd/all_haps_samp2_repmask_nornd_sums.txt",sep = "\t",col.names = T,row.names = F,quote = F)
+write.table(samp2,"all_haps_samp2_repmask_nornd_sums.txt",sep = "\t",col.names = T,row.names = F,quote = F)
 
 samp3 <- samp2 %>% group_by(hap,maj_rep_type) %>% reframe(sum_bp = sum(totreplen),hap_assem_len = hap_assem_len,species=species) %>% distinct()
 haplevs<-c(31:60,1:2,61:90,3:30,91:94)

@@ -6,10 +6,11 @@ install.packages("assertr")
 library(assertr)
 
 #read in pangene output
-pangene<-read.table("/Users/scott/Library/CloudStorage/OneDrive-HarvardUniversity/Research/Scrub\ Jays/pangene/sj-94nl-a2.pg.CNV.Rtable",header = T,sep = "\t",comment.char = "@")
+#Supplementary Table S12
+pangene<-read.table("sj-94-a2.pg.CNV.Rtable",header = T,sep = "\t",comment.char = "@")
 
 #create table of Z-linked genes to subtract from pangene table
-setwd("/Users/scott/Library/CloudStorage/OneDrive-HarvardUniversity/Research/Scrub\ Jays/annotation")
+#the files below are not in Dryad but are easily constructed from annotation files on Dryad
 gene_map<-read_delim("scrubjay_genes.tsv", delim = "\t",
                      col_names = c("chr", "st", "en", "strand", "id_info")) %>%
   mutate(id_info = str_remove_all(id_info, "\"")) %>%
@@ -33,7 +34,7 @@ totz2[682:684]<-c("reg_9383_gGal","reg_9554_gGal","reg_1559_tGut")
 write.table(totz2,"Z_linked_gene_list_684.txt",sep = "\t",quote = F,row.names = F,col.names = F)
 
 #read in table of Z-linked genes
-totz<-read.table("/Users/scott/Library/CloudStorage/OneDrive-HarvardUniversity/Research/Scrub\ Jays/annotation/Z_linked_gene_list_684.txt",sep = "\t")
+totz<-read.table("Z_linked_gene_list_684.txt",sep = "\t")
 
 #remove Z linked genes from pangene table
 pangeneauto<-pangene %>% filter(Gene %!in% totz$V1)
@@ -88,9 +89,8 @@ for(i in 1:dim(pangeneauto)[1]){
   pangeneauto$num_sp_poly_poly[i]<-length(which(pangeneauto[i,grep("polyA",colnames(pangeneauto))] == TRUE))
 }
 
-setwd("/Users/scott/Library/CloudStorage/OneDrive-HarvardUniversity/Research/Scrub\ Jays/pangene/")
-write.table(pangeneauto,"/Users/scott/Library/CloudStorage/OneDrive-HarvardUniversity/Research/Scrub\ Jays/pangene/Pangeneauto_table_final_poly_stats.txt",sep = "\t",col.names = T,row.names = F,quote = F)
-write.table(pangeneauto[,-c(2:95)],"/Users/scott/Library/CloudStorage/OneDrive-HarvardUniversity/Research/Scrub\ Jays/pangene/Pangeneauto_no_haps_poly_stats_final_table.txt",sep = "\t",col.names = T,row.names = F,quote = F)
+write.table(pangeneauto,"pangene_auto_table_final_poly_stats.txt",sep = "\t",col.names = T,row.names = F,quote = F)
+write.table(pangeneauto[,-c(2:95)],"pangene_auto_no_haps_poly_stats_final_table.txt",sep = "\t",col.names = T,row.names = F,quote = F)
 
 #begin calculation of CNV numbers with different filters
 #make table longer, pivoting gene counts per haplotype
@@ -273,6 +273,18 @@ genesumtab %>% filter(sumAB > 5 | sumBB > 5) %>%
                                 BB_pres = sum(genoBBonly,gAA_BB,gAB_BB,gAA_AB_BB,na.rm = T),
                                 sum_all_genes=sum(c(genoAAonly,genoABonly,genoBBonly,gAA_AB,gAA_BB,gAB_BB,gAA_AB_BB),na.rm = T))
 
+
+#total number of genotypes per species heterozygous for deletion (+1/0)
+genesumtab %>% filter(species %in% c("AW","AC","AI")) %>% group_by(species) %>%
+  reframe(totBB = sum(sumAB))
+
+#with polyA* filter
+genesumtab %>% filter(species %in% c("AW","AC","AI") & sumAB > 1 | sumBB > 1) %>% group_by(species) %>%
+  reframe(totBB = sum(sumAB))
+
+#now summarize PAVs in 6 or more haplotypes
+genesumtab %>% filter(species %in% c("AW","AC","AI") & sumAB > 5 | sumBB > 5) %>% group_by(species) %>%
+  reframe(totBB = sum(sumAB))
 
 #total number of genotypes per species homozygous for deletion (0/0)
 genesumtab %>% filter(species %in% c("AW","AC","AI")) %>% group_by(species) %>%
